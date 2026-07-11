@@ -53,7 +53,6 @@
       { id: 1, name: "Kurucu / Yönetici", email: "admin@bellerose.com", pass: "bellerose2026", role: "Süper Admin", permissions: ['overview', 'startDay', 'appointments', 'finance', 'inventory', 'services', 'staff', 'settings'] }
     ];
 
-    // Detaylı 10 Hizmet Verisi
     let SERVICES = [
       { id: 1, name: "Medikal Cilt Bakımı", category: "Cilt", duration: 60, priceMin: 1200, priceMax: 1500, icon: "sparkles", img: "https://images.unsplash.com/photo-1616394584738-fc6e612e71c9?w=600&q=80", desc: "Derinlemesine temizlik ile cildinizi yeniler.", longDesc: "Cildin alt katmanlarına inerek birikmiş kir, yağ ve ölü hücreleri arındırır. Cilt tipinize uygun profesyonel serumlar ve maskeler kullanılarak nem dengesi sağlanır. Gözenekleri sıkılaştırır ve akne oluşumunu engeller." },
       { id: 2, name: "Buz Lazer Epilasyon", category: "Lazer", duration: 45, priceMin: 1800, priceMax: 2200, icon: "zap", img: "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=600&q=80", desc: "Acısız ve ağrısız kalıcı pürüzsüzlük.", longDesc: "Gelişmiş soğutucu başlığı sayesinde kıl köklerini dondurarak acı hissini ortadan kaldırır. Dört mevsim uygulanabilen bu teknoloji ile istenmeyen tüylere kalıcı olarak veda edersiniz." },
@@ -100,7 +99,7 @@
       modals: { postpone: false, payment: false, addFinance: false, addStock: false, addStaff: false, addUser: false, addService: false, density: false, smsConfirm: false },
       activeId: null,
       filters: { aptStaff: '', aptService: '', aptName: '', financeType: 'all', financeDate: 'all' },
-      densities: {}, // Her servis için yoğunluk kapasitesi: Sakin(3), Orta(2), Yoğun(1)
+      densities: {}, 
       
       contact: { phone: '0850 123 45 67', whatsapp: '905555555555', email: 'hello@bellerose.com', address: 'Side Mah. Liman Cad. No:12, Manavgat/Antalya', instagram: '@bellerose.estetik', facebook: '/bellerose' },
       gallery: [
@@ -178,7 +177,7 @@
     window.savePayment = (e) => { e.preventDefault(); const apt = APPOINTMENTS.find(a => a.id === state.activeId); TRANSACTIONS.push({ id: Date.now(), type: "income", source: "appointment", desc: `${apt.service} - ${apt.customer}`, amount: parseFloat(document.getElementById('payAmount').value), method: document.getElementById('payMethod').value, date: SYSTEM_TODAY }); apt.status = "Ödendi / Bitti"; state.modals.payment = false; render(); };
 
     // Yoğunluk & Teyit Modülleri
-    window.setDensity = (srvId, level) => { state.densities[srvId] = level; render(); }; // 3:Sakin, 2:Orta, 1:Yoğun
+    window.setDensity = (srvId, level) => { state.densities[srvId] = level; render(); }; 
     window.confirmClient = (id, willAttend) => {
       if(willAttend) { APPOINTMENTS.find(a => a.id === id).isConfirmed = true; }
       else { APPOINTMENTS = APPOINTMENTS.filter(a => a.id !== id); alert("Müşteri katılmayacağını belirtti. Randevu sistemden silindi."); }
@@ -219,12 +218,12 @@
           <div class="max-w-4xl mx-auto relative z-10">
             <span class="inline-flex items-center gap-2 text-primary text-xs tracking-[0.2em] uppercase mb-6 bg-rose-50 px-5 py-2 rounded-full border border-rose-100 font-medium shadow-sm"><i data-lucide="sparkles" class="w-4 h-4"></i> Güzelliğinize Zarafet Katın</span>
             <h1 class="text-5xl md:text-7xl text-stone-800 leading-tight font-display mb-6">Aynadaki yansımanıza <br><span class="italic text-primary">aşık olacaksınız</span></h1>
-            <p class="mt-6 max-w-xl mx-auto text-stone-500 md:text-lg leading-relaxed">Kendinizi uzman ellere bırakın. Size özel tasarlanmış premium güzellik deneyimini keşfedin.</p>
+            <p class="mt-6 max-w-xl mx-auto text-stone-500 md:text-lg leading-relaxed">Kendinizi uzman ellere bırakın. Cilt bakımından, lazer epilasyona kadar size özel tasarlanmış premium güzellik deneyimini keşfedin.</p>
             <button onclick="openBooking()" class="mt-10 inline-flex items-center gap-2 bg-primary hover-bg-primary text-white px-10 py-4 rounded-full transition-all shadow-xl font-medium transform hover:scale-105"><i data-lucide="calendar-heart" class="w-5 h-5"></i> Hemen Randevu Oluştur</button>
           </div>
         </section>
 
-        <!-- Hizmetlerimiz (Görselli Kartlar) -->
+        <!-- Hizmetlerimiz -->
         <section id="hizmetler" class="px-6 py-20 bg-white/60 backdrop-blur-sm border-y border-rose-50">
           <div class="max-w-7xl mx-auto">
             <div class="mb-14 text-center">
@@ -236,7 +235,7 @@
               ${SERVICES.map(s => `
                 <div class="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all border border-rose-50 cursor-pointer flex flex-col" onclick="openBooking()">
                   <div class="h-56 overflow-hidden relative">
-                    <img src="${s.img}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                    <img src="${s.img || 'https://images.unsplash.com/photo-1616394584738-fc6e612e71c9?w=600&q=80'}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="${s.name}">
                     <div class="absolute inset-0 bg-gradient-to-t from-stone-900/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-5"><p class="text-white text-sm font-medium">Randevu Al &rarr;</p></div>
                   </div>
                   <div class="p-6 flex-1 flex flex-col">
@@ -254,7 +253,7 @@
           </div>
         </section>
 
-        <!-- Ne İşe Yarar? (Blog/Açıklamalar) -->
+        <!-- Ne İşe Yarar? -->
         <section id="nasil-calisir" class="px-6 py-24 bg-[#fdf2f8]">
           <div class="max-w-4xl mx-auto">
             <div class="mb-16 text-center">
@@ -268,7 +267,7 @@
                   <div class="w-16 h-16 rounded-full bg-rose-50 text-primary flex items-center justify-center shrink-0 text-xl font-display font-bold">0${index+1}</div>
                   <div>
                     <h3 class="text-2xl text-stone-800 font-display font-semibold mb-3">${s.name}</h3>
-                    <p class="text-stone-600 leading-relaxed text-sm md:text-base">${s.longDesc}</p>
+                    <p class="text-stone-600 leading-relaxed text-sm md:text-base">${s.longDesc || s.desc}</p>
                   </div>
                 </div>
               `).join('')}
@@ -320,8 +319,7 @@
       }
       else if (s === 2) { 
         canNext = d.time !== null;
-        // Dinamik Yoğunluk Limiti Filtresi
-        const limit = state.densities[d.service.id] || 1; // Default Yoğun(1)
+        const limit = state.densities[d.service.id] || 1; 
         const times = ["09:00","10:30","12:00","14:00","15:30","17:00"];
         const availableTimes = times.filter(t => {
             const booked = APPOINTMENTS.filter(a => a.date === SYSTEM_TODAY && a.time === t && a.service === d.service.name && !a.status.includes('İptal')).length;
@@ -329,7 +327,7 @@
         });
 
         b = `<div><p class="text-xs uppercase tracking-widest text-stone-400 mb-4 font-semibold text-center">${formatDate(SYSTEM_TODAY)} - Müsait Saatler</p><div class="grid grid-cols-3 gap-3">
-          ${availableTimes.length === 0 ? `<div class="col-span-3 text-center text-rose-500 text-sm py-4">Bu hizmet için bugüne ait tüm randevular doludur. Lütfen admin panelinden yoğunluk ayarlarını kontrol edin.</div>` : availableTimes.map(t => `<button onclick="setBookingTime('${t}')" class="py-3.5 rounded-2xl text-sm border transition-all font-medium ${d.time === t ? 'bg-primary border-primary text-white shadow-md' : 'border-stone-200 text-stone-600 hover:border-rose-300'}">${t}</button>`).join('')}
+          ${availableTimes.length === 0 ? `<div class="col-span-3 text-center text-rose-500 text-sm py-4">Bu hizmet için bugüne ait tüm randevular doludur.</div>` : availableTimes.map(t => `<button onclick="setBookingTime('${t}')" class="py-3.5 rounded-2xl text-sm border transition-all font-medium ${d.time === t ? 'bg-primary border-primary text-white shadow-md' : 'border-stone-200 text-stone-600 hover:border-rose-300'}">${t}</button>`).join('')}
         </div></div>`; 
       }
       else if (s === 3) { 
@@ -398,8 +396,6 @@
       }
       else if (state.adminTab === 'appointments') {
         const filteredApts = APPOINTMENTS.filter(a => a.staff.includes(state.filters.aptStaff) && a.service.includes(state.filters.aptService) && a.customer.toLowerCase().includes(state.filters.aptName.toLowerCase()));
-        
-        // Teyit Edilmemişleri say
         const unconfirmedCount = APPOINTMENTS.filter(a => a.status === 'Bekliyor' && !a.isConfirmed).length;
 
         content = `
@@ -546,14 +542,14 @@
       let m = '';
       if(state.modals.postpone) {
         const apt = APPOINTMENTS.find(a => a.id === state.activeId);
-        m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-2">Zamanı Değiştir</h3><p class="text-sm text-stone-500 mb-6">${apt.customer} <br><span class="text-xs">${apt.service}</span></p><form onsubmit="savePostpone(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Yeni Tarih</label><input id="pDate" type="date" required value="${apt.date}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 focus:ring-1 focus:ring-primary bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Yeni Saat</label><input id="pTime" type="time" required value="${apt.time}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 focus:ring-1 focus:ring-primary bg-stone-50"></div><div class="flex gap-3 mt-8"><button type="button" onclick="state.modals.postpone=false; render()" class="flex-1 py-3.5 text-sm font-medium text-stone-500 bg-stone-100 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-blue-500 rounded-2xl shadow-md">Kaydet</button></div></form></div></div>`;
+        m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-2">Zamanı Değiştir</h3><p class="text-sm text-stone-500 mb-6">${apt.customer} <br><span class="text-xs">${apt.service}</span></p><form onsubmit="savePostpone(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Yeni Tarih</label><input id="pDate" type="date" required value="${apt.date}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 focus:ring-1 focus:ring-primary focus:outline-none text-sm bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Yeni Saat</label><input id="pTime" type="time" required value="${apt.time}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 focus:ring-1 focus:ring-primary focus:outline-none text-sm bg-stone-50"></div><div class="flex gap-3 mt-8"><button type="button" onclick="state.modals.postpone=false; render()" class="flex-1 py-3.5 text-sm font-medium text-stone-500 bg-stone-100 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-blue-500 rounded-2xl shadow-md">Zamanı Kaydet</button></div></form></div></div>`;
       }
       if(state.modals.payment) {
         const apt = APPOINTMENTS.find(a => a.id === state.activeId); const srv = SERVICES.find(s => s.name === apt.service);
-        m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><div class="w-14 h-14 rounded-full bg-green-50 text-green-500 flex items-center justify-center mb-4"><i data-lucide="banknote" class="w-6 h-6"></i></div><h3 class="text-2xl text-stone-800 font-display font-semibold mb-2">Ödeme Al</h3><p class="text-sm text-stone-500 mb-6">${apt.customer} - ${apt.service}</p><form onsubmit="savePayment(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Tutar (₺)</label><input id="payAmount" type="number" required value="${srv ? srv.priceMin : 0}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Yöntem</label><select id="payMethod" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"><option>Kredi Kartı</option><option>Nakit</option><option>Havale</option></select></div><div class="flex gap-3 mt-8"><button type="button" onclick="state.modals.payment=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-green-500 rounded-2xl shadow-md">Tamamla</button></div></form></div></div>`;
+        m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><div class="w-14 h-14 rounded-full bg-green-50 text-green-500 flex items-center justify-center mb-4"><i data-lucide="banknote" class="w-6 h-6"></i></div><h3 class="text-2xl text-stone-800 font-display font-semibold mb-2">Ödeme Al</h3><p class="text-sm text-stone-500 mb-6">${apt.customer} - ${apt.service}</p><form onsubmit="savePayment(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Tahsil Edilen Tutar (₺)</label><input id="payAmount" type="number" required value="${srv ? srv.priceMin : 0}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Ödeme Yöntemi</label><select id="payMethod" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"><option>Kredi Kartı</option><option>Nakit</option><option>Havale/EFT</option></select></div><div class="flex gap-3 mt-8"><button type="button" onclick="state.modals.payment=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-green-500 rounded-2xl shadow-md">Tamamla</button></div></form></div></div>`;
       }
       if(state.modals.addStock) {
-        m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-6">Stok Ekle</h3><form onsubmit="saveStock(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Ürün Adı</label><input id="iName" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Miktar</label><input id="iStock" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Birim</label><input id="iUnit" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Kritik Uyarı</label><input id="iMin" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Maliyet (Birim)</label><input id="iCost" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div></div><div class="flex gap-3 mt-6"><button type="button" onclick="state.modals.addStock=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-primary rounded-2xl shadow-md">Kaydet</button></div></form></div></div>`;
+        m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-6">Stok Ekle</h3><form onsubmit="saveStock(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Ürün Adı</label><input id="iName" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Miktar</label><input id="iStock" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Birim</label><input id="iUnit" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Kritik Uyarı</label><input id="iMin" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Birim Maliyet</label><input id="iCost" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div></div><div class="flex gap-3 mt-6"><button type="button" onclick="state.modals.addStock=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-primary rounded-2xl shadow-md">Kaydet</button></div></form></div></div>`;
       }
       if(state.modals.addService) {
         m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-md w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-6">Yeni Hizmet Ekle</h3><form onsubmit="saveService(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Hizmet Adı</label><input id="sName" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Kategori</label><input id="sCat" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Süre (Dk)</label><input id="sDur" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Min Fiyat (₺)</label><input id="sMin" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Max Fiyat (₺)</label><input id="sMax" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div></div><div class="flex gap-3 mt-6"><button type="button" onclick="state.modals.addService=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-primary rounded-2xl shadow-md">Kaydet</button></div></form></div></div>`;
@@ -562,10 +558,8 @@
         m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-6">Finansal İşlem Ekle</h3><form onsubmit="saveFinance(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">İşlem Türü</label><select id="fType" class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"><option value="income">Gelir</option><option value="expense">Gider</option></select></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Açıklama</label><input id="fDesc" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Tutar (₺)</label><input id="fAmount" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Yöntem</label><select id="fMethod" class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"><option>Nakit</option><option>Kredi Kartı</option><option>Havale</option></select></div></div><div class="flex gap-3 mt-6"><button type="button" onclick="state.modals.addFinance=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-primary rounded-2xl shadow-md">Kaydet</button></div></form></div></div>`;
       }
       if(state.modals.addStaff) {
-        m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-xl w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-6">Yeni Uzman Ekle</h3><form onsubmit="saveStaff(event)" class="space-y-5"><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Ad Soyad</label><input id="newStaffName" required type="text" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Unvan / Meslek</label><input id="newStaffTitle" required type="text" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"></div></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-3">Uzmanlık Alanları (Hizmet Seçimi)</label><div class="grid grid-cols-2 gap-3 p-5 bg-rose-50/50 rounded-2xl border border-rose-100">${SERVICES.map(s => `<label class="flex items-center gap-3 text-sm text-stone-700 cursor-pointer"><input type="checkbox" value="${s.id}" class="service-checkbox w-4 h-4 accent-primary"> ${s.name}</label>`).join('')}</div></div><div class="flex gap-3 mt-6"><button type="button" onclick="state.modals.addStaff=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-primary rounded-2xl shadow-md">Kaydet</button></div></form></div></div>`;
+        m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-xl w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-6">Yeni Uzman Ekle</h3><form onsubmit="saveStaff(event)" class="space-y-5"><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Ad Soyad</label><input id="newStaffName" required type="text" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Unvan / Meslek</label><input id="newStaffTitle" required type="text" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"></div></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-3">Uzmanlık Alanları (Hizmet Seçimi)</label><div class="grid grid-cols-2 gap-3 p-5 bg-rose-50/50 rounded-2xl border border-rose-100">${SERVICES.map(s => `<label class="flex items-center gap-3 text-sm text-stone-700 cursor-pointer"><input type="checkbox" value="${s.id}" class="service-checkbox w-4 h-4 accent-primary"> ${s.name}</label>`).join('')}</div></div><div class="flex gap-3 mt-6"><button type="button" onclick="state.modals.addStaff=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-primary rounded-2xl shadow-md">Uzmanı Kaydet</button></div></form></div></div>`;
       }
-
-      // Randevu Yoğunluğu Modalı
       if(state.modals.density) {
         m += `
           <div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4">
@@ -593,8 +587,6 @@
           </div>
         `;
       }
-
-      // SMS Teyit Simülasyon Ekranı
       if(state.modals.smsConfirm) {
         const unconfirmed = APPOINTMENTS.filter(a => a.status === 'Bekliyor' && !a.isConfirmed);
         m += `
@@ -621,7 +613,6 @@
           </div>
         `;
       }
-      
       return m;
     }
 
