@@ -16,6 +16,10 @@
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #fda4af; border-radius: 10px; }
+    
+    /* İkon Barı İçin Scroll Gizleme */
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
     .text-primary { color: #db2777; } .bg-primary { background-color: #f43f5e; }
     .hover-bg-primary:hover { background-color: #e11d48; }
@@ -48,38 +52,42 @@
   <script>
     const SYSTEM_TODAY = "2026-07-11"; 
 
-    // --- MOCK VERİLER ---
-    let USERS = [
+    // --- BAŞLANGIÇ (MOCK) VERİLERİ ---
+    let defaultUsers = [
       { id: 1, name: "Kurucu / Yönetici", email: "admin@bellerose.com", pass: "bellerose2026", role: "Süper Admin", permissions: ['overview', 'startDay', 'appointments', 'finance', 'inventory', 'services', 'staff', 'settings'] }
     ];
 
-    let SERVICES = [
+    let defaultServices = [
       { id: 1, name: "Medikal Cilt Bakımı", category: "Cilt", duration: 60, priceMin: 1200, priceMax: 1500, icon: "sparkles", img: "https://images.unsplash.com/photo-1616394584738-fc6e612e71c9?w=600&q=80", desc: "Derinlemesine temizlik ile cildinizi yeniler.", longDesc: "Cildin alt katmanlarına inerek birikmiş kir, yağ ve ölü hücreleri arındırır. Cilt tipinize uygun profesyonel serumlar ve maskeler kullanılarak nem dengesi sağlanır. Gözenekleri sıkılaştırır ve akne oluşumunu engeller." },
       { id: 2, name: "Buz Lazer Epilasyon", category: "Lazer", duration: 45, priceMin: 1800, priceMax: 2200, icon: "zap", img: "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=600&q=80", desc: "Acısız ve ağrısız kalıcı pürüzsüzlük.", longDesc: "Gelişmiş soğutucu başlığı sayesinde kıl köklerini dondurarak acı hissini ortadan kaldırır. Dört mevsim uygulanabilen bu teknoloji ile istenmeyen tüylere kalıcı olarak veda edersiniz." },
       { id: 3, name: "Kalıcı Oje & Nail Art", category: "Tırnak", duration: 60, priceMin: 600, priceMax: 900, icon: "pen-tool", img: "https://images.unsplash.com/photo-1522337660859-02fbefca4702?w=600&q=80", desc: "Haftalarca bozulmayan kusursuz tırnaklar.", longDesc: "Normal ojelere göre çok daha dayanıklı olan kalıcı oje, UV ışınları ile sabitlenir. Çizilme, soyulma veya matlaşma yapmadan 3-4 hafta boyunca ilk günkü parlaklığını korur." },
       { id: 4, name: "Bölgesel Zayıflama (G5)", category: "Vücut", duration: 40, priceMin: 900, priceMax: 1100, icon: "activity", img: "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=600&q=80", desc: "Sıkılaşma ve selülit tedavisinde kesin çözüm.", longDesc: "Ritmik masaj ve titreşim yöntemi ile kan akışını hızlandırır. Yağ yakımını destekler, ödem attırır ve özellikle selülitli bölgelerde gözle görülür bir pürüzsüzlük ve sıkılaşma sağlar." },
-      { id: 5, name: "İpek Kirpik & Lifting", category: "Göz", duration: 90, priceMin: 800, priceMax: 1200, icon: "eye", img: "https://images.unsplash.com/photo-1512496015851-a1fbbfc69a04?w=600&q=80", desc: "Büyüleyici ve doğal bakışlar.", longDesc: "Kendi kirpiklerinizin uzunluğuna ve yapısına uygun olarak tek tek eklenen ipek kirpikler, maskara kullanmanıza gerek kalmadan yoğun, kıvrık ve derin bakışlara sahip olmanızı sağlar." },
-      { id: 6, name: "Dermapen 4 Tedavisi", category: "Cilt", duration: 50, priceMin: 1400, priceMax: 1800, icon: "target", img: "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=600&q=80", desc: "Leke ve iz onarımında mikroiğneleme teknolojisi.", longDesc: "Cilt yüzeyinde mikro kanallar açılarak cildin kendi kendini onarma süreci tetiklenir. Kolajen üretimini artırır; akne izleri, ince kırışıklıklar ve güneş lekelerinin tedavisinde son derece etkilidir." },
-      { id: 7, name: "Altın İğne (Radyofrekans)", category: "Cilt", duration: 60, priceMin: 2500, priceMax: 3500, icon: "sun", img: "https://images.unsplash.com/photo-1515377905703-c4788e51af15?w=600&q=80", desc: "Ameliyatsız yüz germe ve gençleşme.", longDesc: "Özel tasarlanmış altın iğneler ile cilt altına radyofrekans enerjisi iletilir. Cildin elastikiyetini geri kazandırır, sarkmaları toparlar ve anında daha genç, parlak bir görünüm sunar." },
-      { id: 8, name: "Dudak Renklendirme", category: "Makyaj", duration: 120, priceMin: 3000, priceMax: 4000, icon: "smile", img: "https://images.unsplash.com/photo-1586525198428-225f6f12cff5?w=600&q=80", desc: "Soluk dudaklara kalıcı canlılık.", longDesc: "Doğal bitkisel pigmentler kullanılarak dudak kontürünün belirginleştirilmesi ve renklendirilmesi işlemidir. Solgun görünen dudakları daha canlı, dolgun ve çekici hale getirir." },
-      { id: 9, name: "Microblading 3D Kıl Tekniği", category: "Makyaj", duration: 120, priceMin: 3500, priceMax: 4500, icon: "edit", img: "https://images.unsplash.com/photo-1516975080661-46bbf0f4f9f7?w=600&q=80", desc: "Seyrek kaşlara doğal ve kalıcı dolgunluk.", longDesc: "Özel altın oran pergeli ile yüz hatlarınıza en uygun kaş tasarımı yapılır. Kendi kaş kılınız kalınlığında çizimler yapılarak tamamen doğal, yoğun ve estetik bir kaş profili oluşturulur." },
-      { id: 10, name: "Saç PRP & Mezoterapi", category: "Saç", duration: 40, priceMin: 1500, priceMax: 2000, icon: "scissors", img: "https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?w=600&q=80", desc: "Saç dökülmesini durduran vitamin kompleksi.", longDesc: "Kendi kanınızdan elde edilen zengin plazmanın veya özel vitamin kokteyllerinin saç derisine enjekte edilmesiyle saç kökleri beslenir. Dökülmeyi durdurur ve yeni saç oluşumunu destekler." }
+      { id: 5, name: "İpek Kirpik & Lifting", category: "Göz", duration: 90, priceMin: 800, priceMax: 1200, icon: "eye", img: "https://images.unsplash.com/photo-1512496015851-a1fbbfc69a04?w=600&q=80", desc: "Büyüleyici ve doğal bakışlar.", longDesc: "Kendi kirpiklerinizin uzunluğuna ve yapısına uygun olarak tek tek eklenen ipek kirpikler, maskara kullanmanıza gerek kalmadan yoğun, kıvrık ve derin bakışlara sahip olmanızı sağlar." }
     ];
 
-    let STAFF = [
-      { id: 1, name: "Elif Yılmaz", title: "Cilt & Güzellik Uzmanı", tags: [1, 5, 6, 7, 8, 9] },
-      { id: 2, name: "Merve Kaya", title: "Lazer & Vücut Uzmanı", tags: [2, 4, 10] },
+    let defaultStaff = [
+      { id: 1, name: "Elif Yılmaz", title: "Cilt & Güzellik Uzmanı", tags: [1, 5] },
+      { id: 2, name: "Merve Kaya", title: "Lazer & Vücut Uzmanı", tags: [2, 4] },
       { id: 3, name: "Sena Demir", title: "Tırnak Uzmanı", tags: [3] }
     ];
 
-    let APPOINTMENTS = [
+    let defaultAppointments = [
       { id: 101, customer: "Zeynep Arslan", phone: "0532 111 2233", service: "Medikal Cilt Bakımı", staff: "Elif Yılmaz", date: "2026-07-11", time: "10:00", status: "Bekliyor", isConfirmed: true },
       { id: 102, customer: "Merve Şahin", phone: "0555 444 5566", service: "Kalıcı Oje & Nail Art", staff: "Sena Demir", date: "2026-07-11", time: "14:30", status: "Bekliyor", isConfirmed: false },
       { id: 103, customer: "Ayşe Yılmaz", phone: "0533 222 1100", service: "Buz Lazer Epilasyon", staff: "Merve Kaya", date: "2026-07-11", time: "16:00", status: "Bekliyor", isConfirmed: false }
     ];
 
-    let INVENTORY = [];
-    let TRANSACTIONS = [];
+    let defaultInventory = [
+      { id: 1, name: "Hyaluronik Asit Serum", stock: 12, unit: "Şişe", minAlert: 5, cost: 450 }
+    ];
+
+    let defaultTransactions = [
+      { id: 1, type: "income", source: "appointment", desc: "Medikal Cilt Bakımı - Zeynep A.", amount: 1200, method: "Kredi Kartı", date: "2026-07-11" },
+      { id: 2, type: "expense", source: "inventory", desc: "Stok Alımı: Serum Takviyesi", amount: 900, method: "Havale", date: "2026-07-09" }
+    ];
+
+    // --- AKTİF VERİ DEĞİŞKENLERİ ---
+    let USERS, SERVICES, STAFF, APPOINTMENTS, INVENTORY, TRANSACTIONS;
 
     const MOCK_REVIEWS = Array.from({length: 30}, (_, i) => {
       const names = ["Ayşe T.", "Merve K.", "Zeynep B.", "Fatma S.", "Elif D.", "Selin Y.", "Büşra A.", "Cansu E.", "Derya Ç.", "Ece N."];
@@ -94,13 +102,13 @@
       showBooking: false, bookingStep: 0,
       bookingData: { service: null, staff: null, date: null, time: null, name: '', phone: '' },
       currentUser: null,
+      sidebarOpen: false, // Menü açılır kapanır durumu
       adminTab: 'overview',
       settingsTab: 'contact',
       modals: { postpone: false, payment: false, addFinance: false, addStock: false, addStaff: false, addUser: false, addService: false, density: false, waConfirm: false },
       activeId: null,
       filters: { aptStaff: '', aptService: '', aptName: '', financeType: 'all', financeDate: 'all' },
       densities: {}, 
-      
       contact: { phone: '0850 123 45 67', whatsapp: '905555555555', email: 'hello@bellerose.com', address: 'Side Mah. Liman Cad. No:12, Manavgat/Antalya', instagram: '@bellerose.estetik', facebook: '/bellerose' },
       gallery: [
         'https://images.unsplash.com/photo-1600948836101-f9ffda59d250?auto=format&fit=crop&w=600&q=80',
@@ -109,6 +117,34 @@
         'https://images.unsplash.com/photo-1516975080661-46bbf0f4f9f7?auto=format&fit=crop&w=600&q=80'
       ]
     };
+
+    // --- LOCAL STORAGE (VERİ KALICILIĞI) ---
+    function loadData() {
+        const saved = localStorage.getItem('belleRoseData_v1');
+        if (saved) {
+            const data = JSON.parse(saved);
+            USERS = data.USERS || defaultUsers;
+            SERVICES = data.SERVICES || defaultServices;
+            STAFF = data.STAFF || defaultStaff;
+            APPOINTMENTS = data.APPOINTMENTS || defaultAppointments;
+            INVENTORY = data.INVENTORY || defaultInventory;
+            TRANSACTIONS = data.TRANSACTIONS || defaultTransactions;
+            if(data.contact) state.contact = data.contact;
+            if(data.gallery) state.gallery = data.gallery;
+            if(data.densities) state.densities = data.densities;
+        } else {
+            USERS = defaultUsers; SERVICES = defaultServices; STAFF = defaultStaff; 
+            APPOINTMENTS = defaultAppointments; INVENTORY = defaultInventory; TRANSACTIONS = defaultTransactions;
+            saveData();
+        }
+    }
+    
+    function saveData() {
+        localStorage.setItem('belleRoseData_v1', JSON.stringify({
+            USERS, SERVICES, STAFF, APPOINTMENTS, INVENTORY, TRANSACTIONS, 
+            contact: state.contact, gallery: state.gallery, densities: state.densities
+        }));
+    }
 
     window.addEventListener('hashchange', () => { state.mode = window.location.hash === '#admin' ? 'admin' : 'site'; render(); });
 
@@ -125,7 +161,7 @@
         container.appendChild(heart);
       }
     }
-    initHearts();
+    
 
     function formatDate(dateStr) {
       if(!dateStr) return ''; const parts = dateStr.split('-');
@@ -158,6 +194,7 @@
     window.nextBookingStep = () => { 
       if(state.bookingStep === 3) {
         APPOINTMENTS.push({ id: Date.now(), customer: state.bookingData.name, phone: state.bookingData.phone, service: state.bookingData.service.name, staff: state.bookingData.staff.name, date: state.bookingData.date, time: state.bookingData.time, status: "Bekliyor", isConfirmed: false });
+        saveData(); // Veriyi Kaydet
         state.bookingStep = 4;
       } else { state.bookingStep++; } render(); 
     };
@@ -175,15 +212,16 @@
     window.logoutAdmin = () => { state.currentUser = null; window.location.hash = '#site'; };
     window.setAdminTab = (tab) => { state.adminTab = tab; render(); };
     window.setSettingsTab = (tab) => { state.settingsTab = tab; render(); };
+    window.toggleSidebar = () => { state.sidebarOpen = !state.sidebarOpen; render(); };
 
     // Randevu & İşlemler
-    window.completeAppointment = (id) => { APPOINTMENTS.find(a => a.id === id).status = "Tamamlandı"; render(); };
-    window.cancelAppointment = (id) => { if(confirm("Randevuyu iptal etmek istediğinize emin misiniz?")) { APPOINTMENTS.find(a => a.id === id).status = "İptal Edildi"; render(); } };
-    window.savePostpone = (e) => { e.preventDefault(); const apt = APPOINTMENTS.find(a => a.id === state.activeId); apt.date = document.getElementById('pDate').value; apt.time = document.getElementById('pTime').value; apt.status = "Zamanı Değiştirildi"; state.modals.postpone = false; render(); };
-    window.savePayment = (e) => { e.preventDefault(); const apt = APPOINTMENTS.find(a => a.id === state.activeId); TRANSACTIONS.push({ id: Date.now(), type: "income", source: "appointment", desc: `${apt.service} - ${apt.customer}`, amount: parseFloat(document.getElementById('payAmount').value), method: document.getElementById('payMethod').value, date: SYSTEM_TODAY }); apt.status = "Ödendi / Bitti"; state.modals.payment = false; render(); };
+    window.completeAppointment = (id) => { APPOINTMENTS.find(a => a.id === id).status = "Tamamlandı"; saveData(); render(); };
+    window.cancelAppointment = (id) => { if(confirm("Randevuyu iptal etmek istediğinize emin misiniz?")) { APPOINTMENTS.find(a => a.id === id).status = "İptal Edildi"; saveData(); render(); } };
+    window.savePostpone = (e) => { e.preventDefault(); const apt = APPOINTMENTS.find(a => a.id === state.activeId); apt.date = document.getElementById('pDate').value; apt.time = document.getElementById('pTime').value; apt.status = "Zamanı Değiştirildi"; state.modals.postpone = false; saveData(); render(); };
+    window.savePayment = (e) => { e.preventDefault(); const apt = APPOINTMENTS.find(a => a.id === state.activeId); TRANSACTIONS.push({ id: Date.now(), type: "income", source: "appointment", desc: `${apt.service} - ${apt.customer}`, amount: parseFloat(document.getElementById('payAmount').value), method: document.getElementById('payMethod').value, date: SYSTEM_TODAY }); apt.status = "Ödendi / Bitti"; state.modals.payment = false; saveData(); render(); };
 
     // Yoğunluk & Teyit Modülleri
-    window.setDensity = (srvId, level) => { state.densities[srvId] = level; render(); }; 
+    window.setDensity = (srvId, level) => { state.densities[srvId] = level; saveData(); render(); }; 
     window.confirmClient = (id, willAttend) => {
       if(willAttend) { 
         APPOINTMENTS.find(a => a.id === id).isConfirmed = true; 
@@ -192,29 +230,29 @@
         APPOINTMENTS = APPOINTMENTS.filter(a => a.id !== id); 
         alert("Müşteri katılmayacağını belirtti. Randevu sistemden silindi."); 
       }
-      render();
+      saveData(); render();
     };
 
     // Diğer Kayıt İşlemleri
-    window.saveStock = (e) => { e.preventDefault(); const stock = parseInt(document.getElementById('iStock').value); const cost = parseFloat(document.getElementById('iCost').value); INVENTORY.push({ id: Date.now(), name: document.getElementById('iName').value, stock, unit: document.getElementById('iUnit').value, minAlert: parseInt(document.getElementById('iMin').value), cost }); const totalCost = stock * cost; if(totalCost > 0) TRANSACTIONS.push({ id: Date.now(), type: 'expense', source: 'inventory', desc: `Stok Alımı: ${document.getElementById('iName').value}`, amount: totalCost, method: 'Banka İşlemi', date: SYSTEM_TODAY }); state.modals.addStock = false; render(); };
-    window.saveService = (e) => { e.preventDefault(); SERVICES.push({ id: Date.now(), name: document.getElementById('sName').value, category: document.getElementById('sCat').value, duration: parseInt(document.getElementById('sDur').value), priceMin: parseInt(document.getElementById('sMin').value), priceMax: parseInt(document.getElementById('sMax').value), icon: "sparkles", img: "https://images.unsplash.com/photo-1616394584738-fc6e612e71c9?w=600&q=80", desc: "Yeni eklenen hizmet.", longDesc: "Hizmet açıklaması eklenmemiş." }); state.modals.addService = false; render(); };
-    window.deleteService = (id) => { if(confirm("Hizmeti silmek istediğinize emin misiniz?")) { SERVICES = SERVICES.filter(s => s.id !== id); render(); } };
-    window.saveStaff = (e) => { e.preventDefault(); const tags = Array.from(document.querySelectorAll('.service-checkbox:checked')).map(cb => parseInt(cb.value)); if(tags.length === 0) return alert("En az bir uzmanlık alanı seçin."); STAFF.push({ id: Date.now(), name: document.getElementById('newStaffName').value, title: document.getElementById('newStaffTitle').value, tags }); state.modals.addStaff = false; render(); };
-    window.saveFinance = (e) => { e.preventDefault(); TRANSACTIONS.push({ id: Date.now(), type: document.getElementById('fType').value, source: "extra", desc: document.getElementById('fDesc').value, amount: parseFloat(document.getElementById('fAmount').value), method: document.getElementById('fMethod').value, date: SYSTEM_TODAY }); state.modals.addFinance = false; render(); };
-    window.saveContactInfo = (e) => { e.preventDefault(); state.contact = { phone: document.getElementById('cPhone').value, whatsapp: document.getElementById('cWa').value, email: document.getElementById('cEmail').value, address: document.getElementById('cAddress').value, instagram: document.getElementById('cInsta').value, facebook: document.getElementById('cFace').value }; alert("İletişim bilgileri güncellendi!"); render(); };
+    window.saveStock = (e) => { e.preventDefault(); const stock = parseInt(document.getElementById('iStock').value); const cost = parseFloat(document.getElementById('iCost').value); INVENTORY.push({ id: Date.now(), name: document.getElementById('iName').value, stock, unit: document.getElementById('iUnit').value, minAlert: parseInt(document.getElementById('iMin').value), cost }); const totalCost = stock * cost; if(totalCost > 0) TRANSACTIONS.push({ id: Date.now(), type: 'expense', source: 'inventory', desc: `Stok Alımı: ${document.getElementById('iName').value}`, amount: totalCost, method: 'Banka İşlemi', date: SYSTEM_TODAY }); state.modals.addStock = false; saveData(); render(); };
+    window.saveService = (e) => { e.preventDefault(); SERVICES.push({ id: Date.now(), name: document.getElementById('sName').value, category: document.getElementById('sCat').value, duration: parseInt(document.getElementById('sDur').value), priceMin: parseInt(document.getElementById('sMin').value), priceMax: parseInt(document.getElementById('sMax').value), icon: "sparkles", img: "https://images.unsplash.com/photo-1616394584738-fc6e612e71c9?w=600&q=80", desc: "Yeni eklenen hizmet.", longDesc: "Hizmet açıklaması eklenmemiş." }); state.modals.addService = false; saveData(); render(); };
+    window.deleteService = (id) => { if(confirm("Hizmeti silmek istediğinize emin misiniz?")) { SERVICES = SERVICES.filter(s => s.id !== id); saveData(); render(); } };
+    window.saveStaff = (e) => { e.preventDefault(); const tags = Array.from(document.querySelectorAll('.service-checkbox:checked')).map(cb => parseInt(cb.value)); if(tags.length === 0) return alert("En az bir uzmanlık alanı seçin."); STAFF.push({ id: Date.now(), name: document.getElementById('newStaffName').value, title: document.getElementById('newStaffTitle').value, tags }); state.modals.addStaff = false; saveData(); render(); };
+    window.saveFinance = (e) => { e.preventDefault(); TRANSACTIONS.push({ id: Date.now(), type: document.getElementById('fType').value, source: "extra", desc: document.getElementById('fDesc').value, amount: parseFloat(document.getElementById('fAmount').value), method: document.getElementById('fMethod').value, date: SYSTEM_TODAY }); state.modals.addFinance = false; saveData(); render(); };
+    window.saveContactInfo = (e) => { e.preventDefault(); state.contact = { phone: document.getElementById('cPhone').value, whatsapp: document.getElementById('cWa').value, email: document.getElementById('cEmail').value, address: document.getElementById('cAddress').value, instagram: document.getElementById('cInsta').value, facebook: document.getElementById('cFace').value }; alert("İletişim bilgileri güncellendi!"); saveData(); render(); };
 
     window.saveUser = (e) => {
       e.preventDefault();
       const perms = Array.from(document.querySelectorAll('.perm-checkbox:checked')).map(cb => cb.value);
       if(perms.length === 0) return alert("Kullanıcıya en az bir sayfa yetkisi vermelisiniz.");
       USERS.push({ id: Date.now(), name: document.getElementById('newUName').value, email: document.getElementById('newUEmail').value, pass: document.getElementById('newUPass').value, role: "Personel", permissions: perms });
-      state.modals.addUser = false; render();
+      state.modals.addUser = false; saveData(); render();
     };
 
     window.updateProfile = (e) => {
       e.preventDefault();
       const p = document.getElementById('myPass').value;
-      if(p.length > 2) { state.currentUser.pass = p; alert("Şifreniz başarıyla güncellendi!"); }
+      if(p.length > 2) { state.currentUser.pass = p; alert("Şifreniz başarıyla güncellendi!"); saveData(); }
     };
 
     // --- RENDER MİMARİSİ ---
@@ -404,14 +442,14 @@
       const allTabs = [
         { id: 'overview', label: 'Genel Bakış', icon: 'pie-chart' },
         { id: 'startDay', label: 'Güne Başla', icon: 'sun' },
-        { id: 'appointments', label: 'Tüm Randevular', icon: 'calendar-heart' },
+        { id: 'appointments', label: 'Randevular', icon: 'calendar-heart' },
         { id: 'finance', label: 'Kasa & Gider', icon: 'wallet' },
         { id: 'inventory', label: 'Stok Yönetimi', icon: 'package' },
         { id: 'services', label: 'Hizmetler', icon: 'sparkles' },
         { id: 'staff', label: 'Uzmanlar', icon: 'users' },
-        { id: 'settings', label: 'Site Ayarları', icon: 'settings-2' }
+        { id: 'settings', label: 'Ayarlar', icon: 'settings-2' }
       ];
-      const tabs = allTabs.filter(t => state.currentUser.permissions.includes(t.id));
+      const userTabs = allTabs.filter(t => state.currentUser.permissions.includes(t.id));
 
       let content = '';
 
@@ -441,7 +479,7 @@
           <h2 class="text-3xl text-stone-800 font-display font-semibold mb-8">Güne Başla - Günlük Randevu Planı</h2>
           <div class="grid gap-4">
             ${todayApts.length === 0 ? `<div class="bg-white p-10 rounded-3xl text-center border border-rose-50 shadow-sm"><i data-lucide="check-circle-2" class="w-12 h-12 text-green-400 mx-auto mb-4"></i><p class="text-stone-500 font-medium">Bugün için bekleyen işleminiz kalmadı, harika iş çıkardınız!</p></div>` : todayApts.map(a => `
-              <div class="bg-white border-l-4 border-primary rounded-2xl p-6 shadow-sm flex items-center justify-between">
+              <div class="bg-white border-l-4 border-primary rounded-2xl p-6 shadow-sm flex items-center justify-between transition-all">
                 <div class="flex gap-6 items-center">
                   <div class="text-center bg-rose-50 px-4 py-3 rounded-xl"><p class="text-xs text-stone-500 uppercase font-semibold mb-1">Saat</p><p class="text-xl font-bold text-primary">${a.time}</p></div>
                   <div><p class="text-lg font-semibold text-stone-800">${a.customer} <span class="text-sm font-normal text-stone-400 ml-2">${a.phone}</span></p><p class="text-stone-600 mt-1">${a.service} <span class="text-xs text-stone-400 mx-2">|</span> <i data-lucide="user" class="inline w-3 h-3 text-stone-400"></i> ${a.staff}</p></div>
@@ -551,8 +589,8 @@
           <h2 class="text-3xl text-stone-800 font-display font-semibold mb-8">Sistem & Profil Ayarları</h2>
           <div class="flex gap-6 mb-8 border-b border-stone-200">
             <button onclick="setSettingsTab('contact')" class="pb-3 text-sm font-semibold uppercase tracking-wider ${state.settingsTab==='contact'?'text-primary border-b-2 border-primary':'text-stone-400'}">İletişim Bilgileri</button>
-            <button onclick="setSettingsTab('gallery')" class="pb-3 text-sm font-semibold uppercase tracking-wider ${state.settingsTab==='gallery'?'text-primary border-b-2 border-primary':'text-stone-400'}">Galeri Görüntüleri</button>
-            <button onclick="setSettingsTab('users')" class="pb-3 text-sm font-semibold uppercase tracking-wider ${state.settingsTab==='users'?'text-primary border-b-2 border-primary':'text-stone-400'}">Personel Hesapları</button>
+            <button onclick="setSettingsTab('gallery')" class="pb-3 text-sm font-semibold uppercase tracking-wider ${state.settingsTab==='gallery'?'text-primary border-b-2 border-primary':'text-stone-400'}">Galeri</button>
+            <button onclick="setSettingsTab('users')" class="pb-3 text-sm font-semibold uppercase tracking-wider ${state.settingsTab==='users'?'text-primary border-b-2 border-primary':'text-stone-400'}">Personel</button>
           </div>
         `;
         if(state.settingsTab === 'contact') {
@@ -570,25 +608,63 @@
         }
       }
 
+      const tabsData = [
+        { id: 'overview', label: 'Genel Bakış', icon: 'pie-chart' },
+        { id: 'startDay', label: 'Güne Başla', icon: 'sun' },
+        { id: 'appointments', label: 'Randevular', icon: 'calendar-heart' },
+        { id: 'finance', label: 'Kasa & Gider', icon: 'wallet' },
+        { id: 'inventory', label: 'Stok Yönetimi', icon: 'package' },
+        { id: 'services', label: 'Hizmetler', icon: 'sparkles' },
+        { id: 'staff', label: 'Uzmanlar', icon: 'users' },
+        { id: 'settings', label: 'Site Ayarları', icon: 'settings-2' }
+      ].filter(t => state.currentUser.permissions.includes(t.id));
+
       return `
-        <div class="flex bg-[#fdf2f8] min-h-screen relative z-10">
-          <aside class="w-72 bg-white border-r border-rose-100 min-h-screen flex flex-col fixed left-0 top-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20 overflow-y-auto">
-            <div class="p-8 flex items-center gap-3 border-b border-rose-50"><div class="w-10 h-10 rounded-full bg-rose-50 text-primary flex items-center justify-center"><i data-lucide="flower-2" class="w-6 h-6"></i></div><span class="text-2xl text-stone-800 font-display font-semibold tracking-wide">Belle<span class="text-primary italic">Rose</span></span></div>
+        <div class="flex flex-col bg-[#fdf2f8] min-h-screen relative z-10 pt-20">
+          
+          <!-- TOP NAVBAR -->
+          <div class="fixed top-0 left-0 right-0 h-20 bg-white/90 backdrop-blur-lg border-b border-rose-100 shadow-sm z-40 flex items-center px-6 justify-between transition-all">
+            <div class="flex items-center gap-4">
+              <button onclick="toggleSidebar()" class="p-3 bg-rose-50 text-primary rounded-2xl hover:bg-primary hover:text-white transition-all shadow-sm">
+                <i data-lucide="${state.sidebarOpen ? 'x' : 'menu'}" class="w-6 h-6"></i>
+              </button>
+              <span class="text-2xl text-stone-800 font-display font-semibold tracking-wide hidden sm:block">Belle<span class="text-primary italic">Rose</span></span>
+            </div>
+            
+            ${!state.sidebarOpen ? `
+            <div class="flex items-center gap-3 overflow-x-auto hide-scrollbar pl-4">
+              ${tabsData.map(t => `
+                <button onclick="setAdminTab('${t.id}')" title="${t.label}" class="shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-sm border ${state.adminTab === t.id ? 'bg-primary text-white border-primary ring-4 ring-rose-100' : 'bg-white text-stone-500 hover:bg-rose-50 border-stone-100 hover:text-primary'}">
+                  <i data-lucide="${t.icon}" class="w-5 h-5"></i>
+                </button>
+              `).join('')}
+              <button onclick="logoutAdmin()" title="Çıkış Yap" class="shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-sm border bg-stone-800 text-white hover:bg-stone-700 border-stone-800 ml-2">
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+              </button>
+            </div>
+            ` : `<div class="text-sm font-medium text-stone-400">Yönetim Menüsü</div>`}
+          </div>
+
+          <!-- SIDEBAR OVERLAY -->
+          ${state.sidebarOpen ? `
+          <aside class="fixed top-20 left-0 bottom-0 w-72 bg-white border-r border-rose-100 shadow-2xl z-50 overflow-y-auto flex flex-col transition-all">
             <nav class="flex-1 px-4 py-6 space-y-2">
-              ${[
-                { id: 'overview', label: 'Genel Bakış', icon: 'pie-chart' },
-                { id: 'startDay', label: 'Güne Başla', icon: 'sun' },
-                { id: 'appointments', label: 'Tüm Randevular', icon: 'calendar-heart' },
-                { id: 'finance', label: 'Kasa & Gider', icon: 'wallet' },
-                { id: 'inventory', label: 'Stok Yönetimi', icon: 'package' },
-                { id: 'services', label: 'Hizmetler', icon: 'sparkles' },
-                { id: 'staff', label: 'Uzmanlar', icon: 'users' },
-                { id: 'settings', label: 'Site Ayarları', icon: 'settings-2' }
-              ].filter(t => state.currentUser.permissions.includes(t.id)).map(t => `<button onclick="setAdminTab('${t.id}')" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-sm transition-all ${state.adminTab === t.id ? 'bg-primary text-white shadow-md font-medium' : 'text-stone-500 hover:bg-rose-50 hover:text-primary'}"><i data-lucide="${t.icon}" class="w-5 h-5"></i> ${t.label}</button>`).join('')}
+              ${tabsData.map(t => `
+                <button onclick="setAdminTab('${t.id}'); toggleSidebar();" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-sm transition-all ${state.adminTab === t.id ? 'bg-primary text-white shadow-md font-medium' : 'text-stone-500 hover:bg-rose-50 hover:text-primary'}">
+                  <i data-lucide="${t.icon}" class="w-5 h-5"></i> ${t.label}
+                </button>
+              `).join('')}
             </nav>
-            <div class="p-6 border-t border-rose-50"><button onclick="logoutAdmin()" class="w-full flex items-center justify-center gap-3 px-5 py-4 text-sm text-rose-400 hover:bg-rose-50 transition-colors rounded-2xl font-medium"><i data-lucide="log-out" class="w-5 h-5"></i> Çıkış Yap</button></div>
+            <div class="p-6 border-t border-rose-50">
+              <button onclick="logoutAdmin()" class="w-full flex items-center justify-center gap-3 px-5 py-4 text-sm text-rose-400 hover:bg-rose-50 transition-colors rounded-2xl font-medium">
+                <i data-lucide="log-out" class="w-5 h-5"></i> Güvenli Çıkış
+              </button>
+            </div>
           </aside>
-          <main class="flex-1 ml-72 p-10 lg:p-14 max-w-7xl pb-20">${content}</main>
+          ` : ''}
+
+          <!-- MAIN CONTENT -->
+          <main class="flex-1 p-6 lg:p-10 max-w-7xl mx-auto w-full transition-all">${content}</main>
         </div>
       `;
     }
@@ -678,6 +754,8 @@
       return m;
     }
 
+    // Uygulamayı Başlat (Verileri yükle ve Ekrana çiz)
+    loadData();
     render();
   </script>
 </body>
