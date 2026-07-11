@@ -7,6 +7,7 @@
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Zarif ve Feminen Fontlar: Playfair Display (Başlıklar) & Poppins (Metinler) -->
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
   
   <style>
@@ -20,6 +21,7 @@
     .text-primary { color: #db2777; } .bg-primary { background-color: #f43f5e; }
     .hover-bg-primary:hover { background-color: #e11d48; }
     
+    /* Uçuşan Kalpler */
     .hearts-bg { position: fixed; inset: 0; pointer-events: none; z-index: -1; overflow: hidden; background-color: #fff0f5; }
     .floating-heart { position: absolute; color: #fda4af; opacity: 0; animation: floatHeart linear infinite; }
     @keyframes floatHeart { 
@@ -30,12 +32,17 @@
         100% { transform: translate(-30px, -10vh) scale(0.8) rotate(-25deg); opacity: 0; } 
     }
 
+    /* Kayan Yorumlar */
     .marquee-container { overflow: hidden; white-space: nowrap; position: relative; width: 100%; }
     .marquee-content { display: inline-block; animation: marquee 35s linear infinite; }
     .marquee-content:hover { animation-play-state: paused; }
     @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
     .glass-panel { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); }
+    
+    /* Dinamik Grafik Çubukları */
+    .mini-chart { display: flex; align-items: flex-end; gap: 3px; height: 32px; }
+    .mini-bar { background-color: #db2777; width: 6px; border-radius: 3px 3px 0 0; opacity: 0.7; }
   </style>
 </head>
 <body class="text-stone-600 antialiased">
@@ -49,7 +56,7 @@
 
     // --- MOCK VERİLER ---
     let USERS = [
-      { id: 1, name: "Kurucu / Yönetici", email: "admin@bellerose.com", pass: "bellerose2026", role: "Süper Admin", permissions: ['startDay', 'overview', 'appointments', 'finance', 'inventory', 'services', 'staff', 'settings'] },
+      { id: 1, name: "Kurucu / Yönetici", email: "admin@bellerose.com", pass: "bellerose2026", role: "Süper Admin", permissions: ['overview', 'startDay', 'appointments', 'finance', 'inventory', 'services', 'staff', 'settings'] },
       { id: 2, name: "Ceren (Resepsiyon)", email: "ceren@bellerose.com", pass: "1234", role: "Personel", permissions: ['startDay', 'appointments'] }
     ];
 
@@ -75,8 +82,9 @@
     ];
 
     let TRANSACTIONS = [
-      { id: 1, type: "income", source: "appointment", desc: "Medikal Cilt Bakımı - Zeynep A.", amount: 1200, method: "Kredi Kartı", date: "2026-07-10" },
-      { id: 2, type: "expense", source: "inventory", desc: "Stok Alımı: Aseton", amount: 800, method: "Havale", date: "2026-07-08" }
+      { id: 1, type: "income", source: "appointment", desc: "Medikal Cilt Bakımı - Zeynep A.", amount: 1200, method: "Kredi Kartı", date: "2026-07-11" },
+      { id: 2, type: "income", source: "appointment", desc: "Kalıcı Oje - Merve Ş.", amount: 800, method: "Nakit", date: "2026-07-11" },
+      { id: 3, type: "expense", source: "inventory", desc: "Stok Alımı: Serum Takviyesi", amount: 900, method: "Havale", date: "2026-07-11" }
     ];
 
     const MOCK_REVIEWS = Array.from({length: 30}, (_, i) => {
@@ -92,7 +100,7 @@
       showBooking: false, bookingStep: 0,
       bookingData: { service: null, staff: null, date: null, time: null, name: '', phone: '' },
       currentUser: null,
-      adminTab: 'startDay',
+      adminTab: 'overview',
       settingsTab: 'contact',
       modals: { postpone: false, payment: false, addFinance: false, addStock: false, addStaff: false, addUser: false, addService: false },
       activeId: null,
@@ -129,10 +137,13 @@
       return parts.length === 3 ? `${parts[2]}.${parts[1]}.${parts[0].slice(2)}` : dateStr;
     }
 
-    // Tarih farkı hesaplama yardımcı fonksiyonu
     function getDateDiffDays(date1, date2) {
       const d1 = new Date(date1); const d2 = new Date(date2);
       return Math.ceil(Math.abs(d2 - d1) / (1000 * 60 * 60 * 24));
+    }
+
+    function generateBars() {
+      return Array.from({length: 5}).map(() => `<div class="mini-bar" style="height: ${Math.random() * 24 + 8}px"></div>`).join('');
     }
 
     // --- GLOBAL FONKSİYONLAR ---
@@ -167,7 +178,7 @@
     window.setAdminTab = (tab) => { state.adminTab = tab; render(); };
     window.setSettingsTab = (tab) => { state.settingsTab = tab; render(); };
 
-    // İşlem / Randevu Yönetimi
+    // Randevu Yönetimi
     window.completeAppointment = (id) => {
       const apt = APPOINTMENTS.find(a => a.id === id);
       apt.status = "Tamamlandı";
@@ -238,6 +249,20 @@
       alert("Galeri görselleri güncellendi!"); render();
     };
 
+    window.saveUser = (e) => {
+      e.preventDefault();
+      const perms = Array.from(document.querySelectorAll('.perm-checkbox:checked')).map(cb => cb.value);
+      if(perms.length === 0) return alert("Kullanıcıya en az bir sayfa yetkisi vermelisiniz.");
+      USERS.push({ id: Date.now(), name: document.getElementById('newUName').value, email: document.getElementById('newUEmail').value, pass: document.getElementById('newUPass').value, role: "Personel", permissions: perms });
+      state.modals.addUser = false; render();
+    };
+
+    window.updateProfile = (e) => {
+      e.preventDefault();
+      const p = document.getElementById('myPass').value;
+      if(p.length > 2) { state.currentUser.pass = p; alert("Şifreniz başarıyla güncellendi!"); }
+    };
+
     // --- RENDER ---
     function render() {
       const app = document.getElementById('app');
@@ -245,7 +270,7 @@
       lucide.createIcons();
     }
 
-    // --- SİTE ŞABLONLARI ---
+    // --- SİTE ---
     function renderSite() {
       return `
         <header class="fixed top-0 inset-x-0 z-30 glass-panel border-b border-rose-100 shadow-sm">
@@ -328,19 +353,19 @@
       if (s === 0) { canNext = d.service !== null; b = `<div class="grid sm:grid-cols-2 gap-4">${SERVICES.map(srv => `<button onclick="setBookingService(${srv.id})" class="text-left border rounded-3xl p-5 transition-all ${d.service?.id === srv.id ? 'border-primary bg-rose-50 ring-1 ring-rose-200' : 'border-stone-100 hover:border-rose-200'}"><div class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-primary shadow-sm mb-3"><i data-lucide="${srv.icon}" class="w-5 h-5"></i></div><p class="text-stone-800 text-lg font-display font-semibold">${srv.name}</p></button>`).join('')}</div>`; }
       else if (s === 1) { canNext = d.staff !== null; const av = d.service ? STAFF.filter(stf => stf.tags.includes(d.service.id)) : STAFF; b = av.length === 0 ? `<p class="text-stone-400 text-center py-10">Uygun uzman bulunmuyor.</p>` : `<div class="grid sm:grid-cols-2 gap-4">${av.map(stf => `<button onclick="setBookingStaff(${stf.id})" class="text-left border rounded-3xl p-5 flex items-center gap-4 transition-all ${d.staff?.id === stf.id ? 'border-primary bg-rose-50 ring-1 ring-rose-200' : 'border-stone-100 hover:border-rose-200'}"><div class="w-14 h-14 rounded-full bg-white flex items-center justify-center text-rose-300 shadow-sm"><i data-lucide="user" class="w-6 h-6"></i></div><div><p class="text-stone-800 text-lg font-display font-semibold">${stf.name}</p><p class="text-xs text-stone-500 mt-1">${stf.title}</p></div></button>`).join('')}</div>`; }
       else if (s === 2) { canNext = d.time !== null; b = `<div><p class="text-xs uppercase tracking-widest text-stone-400 mb-4 font-semibold text-center">${formatDate(SYSTEM_TODAY)} - Müsait Saatler</p><div class="grid grid-cols-3 gap-3">${["09:00","10:30","12:00","14:00","15:30","17:00"].map(t => `<button onclick="setBookingTime('${t}')" class="py-3.5 rounded-2xl text-sm border transition-all font-medium ${d.time === t ? 'bg-primary border-primary text-white shadow-md' : 'border-stone-200 text-stone-600 hover:border-rose-300'}">${t}</button>`).join('')}</div></div>`; }
-      else if (s === 3) { canNext = d.name.length > 2 && d.phone.length > 9; b = `<div class="space-y-5"><div class="bg-rose-50 rounded-3xl p-6 border border-rose-100"><p class="font-display text-xl text-stone-800 mb-2">${d.service.name}</p><p class="text-sm text-stone-500 flex items-center gap-2"><i data-lucide="user" class="w-4 h-4 text-primary"></i> ${d.staff.name}</p><p class="text-sm text-stone-500 flex items-center gap-2 mt-1"><i data-lucide="clock" class="w-4 h-4 text-primary"></i> ${formatDate(SYSTEM_TODAY)} ${d.time}</p></div><div><label class="text-xs font-semibold uppercase tracking-wider text-stone-500 mb-2 block ml-1">Adınız Soyadınız</label><input type="text" oninput="handleInput('name', this)" value="${d.name}" class="w-full border border-stone-200 rounded-2xl px-5 py-4 focus:outline-none focus:ring-1 focus:ring-primary bg-stone-50/50"></div><div><label class="text-xs font-semibold uppercase tracking-wider text-stone-500 mb-2 block ml-1">Telefon Numaranız</label><input type="tel" oninput="handleInput('phone', this)" value="${d.phone}" class="w-full border border-stone-200 rounded-2xl px-5 py-4 focus:outline-none focus:ring-1 focus:ring-primary bg-stone-50/50"></div></div>`; }
+      else if (s === 3) { canNext = d.name.length > 2 && d.phone.length > 9; b = `<div class="space-y-5"><div class="bg-rose-50 rounded-3xl p-6 border border-rose-100"><p class="font-display text-xl text-stone-800 mb-2">${d.service.name}</p><p class="text-sm text-stone-500 flex items-center gap-2"><i data-lucide="user" class="w-4 h-4 text-primary"></i> ${d.staff.name}</p><p class="text-sm text-stone-500 flex items-center gap-2 mt-1"><i data-lucide="clock" class="w-4 h-4 text-primary"></i> ${formatDate(SYSTEM_TODAY)} ${d.time}</p></div><div><label class="text-xs font-semibold uppercase tracking-wider text-stone-500 mb-2 block ml-1">Adınız Soyadınız</label><input type="text" oninput="handleInput('name', this)" value="${d.name}" class="w-full border border-stone-200 rounded-2xl px-5 py-4 focus:outline-none focus:ring-1 focus:ring-primary bg-stone-50/50"></div><div><label class="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-2 block ml-1">Telefon Numaranız</label><input type="tel" oninput="handleInput('phone', this)" value="${d.phone}" class="w-full border border-stone-200 rounded-2xl px-5 py-4 focus:outline-none focus:ring-1 focus:ring-primary bg-stone-50/50"></div></div>`; }
       return `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4 py-8"><div class="bg-white rounded-[2rem] w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"><div class="p-6 border-b border-stone-100 flex items-center justify-between"><h3 class="text-2xl text-stone-800 font-display font-semibold">Randevu Oluştur</h3><button onclick="closeBooking()" class="text-stone-400 hover:text-primary transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button></div><div class="flex px-8 pt-8 gap-3">${["Hizmet", "Uzman", "Zaman", "Bilgiler"].map((l, i) => `<div class="flex-1"><div class="h-1.5 rounded-full ${i <= s ? 'bg-primary' : 'bg-stone-100'}"></div><p class="text-[10px] mt-2 font-medium uppercase tracking-widest ${i === s ? 'text-primary' : 'text-stone-400'}">${l}</p></div>`).join('')}</div><div class="p-8 overflow-y-auto flex-1">${b}</div><div class="p-6 border-t border-stone-100 flex justify-between bg-stone-50/50"><button onclick="prevBookingStep()" class="px-6 py-3 rounded-full text-stone-500 font-medium ${s === 0 ? 'invisible' : 'hover:bg-white border border-stone-200'}">Geri Dön</button><button id="confirm-btn" onclick="nextBookingStep()" ${!canNext ? 'disabled' : ''} class="bg-primary hover-bg-primary disabled:opacity-40 text-white px-10 py-3 rounded-full transition-colors font-medium shadow-md">${s === 3 ? 'Onayla' : 'Devam Et'}</button></div></div></div>`;
     }
 
-    // --- ADMİN ŞABLONLARI ---
+    // --- ADMİN PANELİ ---
     function renderAdminLogin() {
       return `<div class="min-h-screen bg-stone-900 flex items-center justify-center px-6 relative z-10"><div class="bg-white rounded-[2rem] p-10 max-w-sm w-full shadow-2xl"><div class="w-16 h-16 rounded-full bg-rose-50 text-primary flex items-center justify-center mb-6"><i data-lucide="lock-keyhole" class="w-7 h-7"></i></div><h2 class="text-3xl text-stone-800 font-display font-semibold mb-1">Yönetim Paneli</h2><p class="text-sm text-stone-400 mb-8">Kurumsal Giriş</p><form onsubmit="loginAdmin(event)" class="space-y-5"><div><label class="text-xs font-semibold uppercase tracking-wider text-stone-500 block mb-2">E-posta</label><input id="adminEmail" type="email" required class="w-full border border-stone-200 rounded-2xl px-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-primary" value="admin@bellerose.com"></div><div><label class="text-xs font-semibold uppercase tracking-wider text-stone-500 block mb-2">Şifre</label><input id="adminPass" type="password" required class="w-full border border-stone-200 rounded-2xl px-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-primary" value="bellerose2026"></div><button type="submit" class="w-full bg-primary hover-bg-primary text-white py-3.5 rounded-2xl font-medium transition-colors shadow-md mt-2">Giriş Yap</button></form></div></div>`;
     }
 
     function renderAdminDashboard() {
       const allTabs = [
-        { id: 'startDay', label: 'Güne Başla', icon: 'sun' },
         { id: 'overview', label: 'Genel Bakış', icon: 'pie-chart' },
+        { id: 'startDay', label: 'Güne Başla', icon: 'sun' },
         { id: 'appointments', label: 'Tüm Randevular', icon: 'calendar-heart' },
         { id: 'finance', label: 'Kasa & Gider', icon: 'wallet' },
         { id: 'inventory', label: 'Stok Yönetimi', icon: 'package' },
@@ -352,14 +377,84 @@
 
       let content = '';
 
-      // 0. GÜNE BAŞLA (START DAY)
-      if (state.adminTab === 'startDay') {
+      // 1. GENEL BAKIŞ (EN ÜSTTE)
+      if (state.adminTab === 'overview') {
+        const todayApts = APPOINTMENTS.filter(a => a.date === SYSTEM_TODAY);
+        const income = TRANSACTIONS.filter(t => t.date === SYSTEM_TODAY && t.type === 'income').reduce((s, t) => s + t.amount, 0);
+        const expense = TRANSACTIONS.filter(t => t.date === SYSTEM_TODAY && t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+        const pending = todayApts.filter(a => a.status === 'Bekliyor' || a.status === 'Onaylı');
+
+        content = `
+          <h2 class="text-3xl text-stone-800 font-display font-semibold mb-8">Yönetim Paneli Özet Ekranı ✨</h2>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-3xl p-6 border border-rose-50 shadow-sm">
+              <div class="flex justify-between items-start mb-4">
+                <div class="w-12 h-12 rounded-full bg-rose-50 text-primary flex items-center justify-center"><i data-lucide="calendar" class="w-6 h-6"></i></div>
+                <div class="mini-chart">${generateBars()}</div>
+              </div>
+              <p class="text-xs text-stone-400 font-medium uppercase tracking-wider">Bugünün Toplam Randevusu</p>
+              <p class="text-3xl font-bold text-stone-800 mt-1">${todayApts.length}</p>
+            </div>
+            <div class="bg-white rounded-3xl p-6 border border-rose-50 shadow-sm">
+              <div class="flex justify-between items-start mb-4">
+                <div class="w-12 h-12 rounded-full bg-green-50 text-green-500 flex items-center justify-center"><i data-lucide="trending-up" class="w-6 h-6"></i></div>
+                <div class="mini-chart">${generateBars()}</div>
+              </div>
+              <p class="text-xs text-stone-400 font-medium uppercase tracking-wider">Bugünün Cirosu</p>
+              <p class="text-3xl font-bold text-stone-800 mt-1">${income} ₺</p>
+            </div>
+            <div class="bg-white rounded-3xl p-6 border border-rose-50 shadow-sm">
+              <div class="flex justify-between items-start mb-4">
+                <div class="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center"><i data-lucide="trending-down" class="w-6 h-6"></i></div>
+                <div class="mini-chart">${generateBars()}</div>
+              </div>
+              <p class="text-xs text-stone-400 font-medium uppercase tracking-wider">Bugünün Toplam Gideri</p>
+              <p class="text-3xl font-bold text-stone-800 mt-1">${expense} ₺</p>
+            </div>
+            <div class="bg-white rounded-3xl p-6 border border-rose-50 shadow-sm">
+              <div class="flex justify-between items-start mb-4">
+                <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center"><i data-lucide="award" class="w-6 h-6"></i></div>
+                <div class="mini-chart">${generateBars()}</div>
+              </div>
+              <p class="text-xs text-stone-400 font-medium uppercase tracking-wider">Net Kâr Durumu</p>
+              <p class="text-3xl font-bold text-stone-800 mt-1">${income - expense} ₺</p>
+            </div>
+          </div>
+          
+          <div class="grid md:grid-cols-2 gap-8">
+            <div class="bg-white rounded-3xl border border-rose-50 p-6 shadow-sm">
+                <h3 class="text-lg font-display font-semibold text-stone-800 mb-4">Bugün Bekleyen Randevular</h3>
+                <div class="space-y-3">
+                  ${pending.length === 0 ? '<p class="text-stone-400 text-sm">Bekleyen randevu kaydı yok.</p>' : pending.map(a => `
+                    <div class="flex items-center justify-between p-4 bg-stone-50 rounded-2xl">
+                      <div><p class="font-semibold text-stone-700 text-sm">${a.customer}</p><p class="text-xs text-stone-500 mt-0.5">${a.service}</p></div>
+                      <div class="text-right"><p class="text-primary font-medium text-sm">${a.time}</p><p class="text-[10px] text-stone-400 mt-0.5">${a.staff}</p></div>
+                    </div>
+                  `).join('')}
+                </div>
+            </div>
+            <div class="bg-white rounded-3xl border border-rose-50 p-6 shadow-sm">
+                <h3 class="text-lg font-display font-semibold text-stone-800 mb-4">Sistem Kritik Seviye Alarmları</h3>
+                <div class="space-y-3">
+                  ${INVENTORY.filter(i => i.stock <= i.minAlert).map(i => `
+                    <div class="flex items-center gap-3 p-4 bg-red-50 rounded-2xl text-red-700 text-sm">
+                      <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                      <span>Kritik Stok Seviyesi: <strong>${i.name}</strong> (Kalan: ${i.stock} ${i.unit})</span>
+                    </div>
+                  `).join('') || '<p class="text-stone-400 text-sm">Tüm stoklarınız yeterli seviyede.</p>'}
+                </div>
+            </div>
+          </div>
+        `;
+      }
+      // 2. GÜNE BAŞLA
+      else if (state.adminTab === 'startDay') {
         const todayApts = APPOINTMENTS.filter(a => a.date === SYSTEM_TODAY && !a.status.includes('Bitti') && !a.status.includes('Tamamlandı') && !a.status.includes('İptal')).sort((a,b) => a.time.localeCompare(b.time));
         content = `
-          <h2 class="text-3xl text-stone-800 font-display font-semibold mb-8">Güne Başla - Aktif Randevular</h2>
+          <h2 class="text-3xl text-stone-800 font-display font-semibold mb-8">Güne Başla - Günlük Randevu Planı</h2>
           <div class="grid gap-4">
-            ${todayApts.length === 0 ? `<div class="bg-white p-10 rounded-3xl text-center border border-rose-50 shadow-sm"><i data-lucide="check-circle-2" class="w-12 h-12 text-green-400 mx-auto mb-4"></i><p class="text-stone-500 font-medium">Bugün için bekleyen işleminiz kalmadı, harika iş çıkardınız!</p></div>` : todayApts.map(a => `
-              <div class="bg-white border-l-4 border-primary rounded-2xl p-6 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
+            ${todayApts.length === 0 ? `<div class="bg-white p-10 rounded-3xl text-center border border-rose-50 shadow-sm"><i data-lucide="check-circle-2" class="w-12 h-12 text-green-400 mx-auto mb-4"></i><p class="text-stone-500 font-medium">Bugün tamamlanmayı bekleyen herhangi bir aktif işlem yok.</p></div>` : todayApts.map(a => `
+              <div class="bg-white border-l-4 border-primary rounded-2xl p-6 shadow-sm flex items-center justify-between">
                 <div class="flex gap-6 items-center">
                   <div class="text-center bg-rose-50 px-4 py-3 rounded-xl"><p class="text-xs text-stone-500 uppercase font-semibold mb-1">Saat</p><p class="text-xl font-bold text-primary">${a.time}</p></div>
                   <div><p class="text-lg font-semibold text-stone-800">${a.customer} <span class="text-sm font-normal text-stone-400 ml-2">${a.phone}</span></p><p class="text-stone-600 mt-1">${a.service} <span class="text-xs text-stone-400 mx-2">|</span> <i data-lucide="user" class="inline w-3 h-3 text-stone-400"></i> ${a.staff}</p></div>
@@ -370,23 +465,7 @@
           </div>
         `;
       }
-      // 1. GENEL BAKIŞ
-      else if (state.adminTab === 'overview') {
-        const todayApts = APPOINTMENTS.filter(a => a.date === SYSTEM_TODAY);
-        const income = TRANSACTIONS.filter(t => t.date === SYSTEM_TODAY && t.type === 'income').reduce((s, t) => s + t.amount, 0);
-        const expense = TRANSACTIONS.filter(t => t.date === SYSTEM_TODAY && t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-
-        content = `
-          <h2 class="text-3xl text-stone-800 font-display font-semibold mb-8">Merhaba, ${state.currentUser.name.split(' ')[0]} ✨</h2>
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white rounded-3xl p-6 border border-rose-50 shadow-sm"><div class="w-12 h-12 rounded-full bg-rose-50 text-primary flex items-center justify-center mb-4"><i data-lucide="calendar" class="w-6 h-6"></i></div><p class="text-xs text-stone-400 font-medium uppercase tracking-wider">Bugün Randevu</p><p class="text-3xl font-bold text-stone-800 mt-1">${todayApts.length}</p></div>
-            <div class="bg-white rounded-3xl p-6 border border-rose-50 shadow-sm"><div class="w-12 h-12 rounded-full bg-green-50 text-green-500 flex items-center justify-center mb-4"><i data-lucide="trending-up" class="w-6 h-6"></i></div><p class="text-xs text-stone-400 font-medium uppercase tracking-wider">Günlük Ciro</p><p class="text-3xl font-bold text-stone-800 mt-1">${income} ₺</p></div>
-            <div class="bg-white rounded-3xl p-6 border border-rose-50 shadow-sm"><div class="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center mb-4"><i data-lucide="trending-down" class="w-6 h-6"></i></div><p class="text-xs text-stone-400 font-medium uppercase tracking-wider">Günlük Gider</p><p class="text-3xl font-bold text-stone-800 mt-1">${expense} ₺</p></div>
-            <div class="bg-white rounded-3xl p-6 border border-rose-50 shadow-sm"><div class="w-12 h-12 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mb-4"><i data-lucide="award" class="w-6 h-6"></i></div><p class="text-xs text-stone-400 font-medium uppercase tracking-wider">Net Kazanç</p><p class="text-3xl font-bold text-stone-800 mt-1">${income - expense} ₺</p></div>
-          </div>
-        `;
-      } 
-      // 2. RANDEVULAR
+      // 3. TÜM RANDEVULAR
       else if (state.adminTab === 'appointments') {
         const filteredApts = APPOINTMENTS.filter(a => a.staff.includes(state.filters.aptStaff) && a.service.includes(state.filters.aptService) && a.customer.toLowerCase().includes(state.filters.aptName.toLowerCase()));
         content = `
@@ -417,7 +496,7 @@
           </div>
         `;
       }
-      // 3. KASA & GİDER
+      // 4. KASA & GİDER
       else if (state.adminTab === 'finance') {
         let filteredTrans = TRANSACTIONS;
         if(state.filters.financeType !== 'all') filteredTrans = filteredTrans.filter(t => t.type === state.filters.financeType);
@@ -431,12 +510,11 @@
                return true;
            });
         }
-        
         content = `
           <div class="flex items-center justify-between mb-8"><h2 class="text-3xl text-stone-800 font-display font-semibold">Kasa & Gider Yönetimi</h2><button onclick="state.modals.addFinance=true; render()" class="bg-primary text-white px-6 py-3 rounded-2xl text-sm flex items-center gap-2 font-medium shadow-md"><i data-lucide="plus" class="w-4 h-4"></i> İşlem Ekle</button></div>
           <div class="flex flex-wrap gap-4 mb-6 bg-white p-4 rounded-2xl border border-rose-50 shadow-sm">
-            <select onchange="updateFilter('financeType', this.value)" class="border border-stone-200 rounded-xl px-4 py-2 text-sm bg-stone-50 focus:outline-none"><option value="all">Tüm İşlemler</option><option value="income">Sadece Gelirler</option><option value="expense">Sadece Giderler</option></select>
-            <select onchange="updateFilter('financeDate', this.value)" class="border border-stone-200 rounded-xl px-4 py-2 text-sm bg-stone-50 focus:outline-none"><option value="all" ${state.filters.financeDate==='all'?'selected':''}>Tüm Zamanlar</option><option value="1d" ${state.filters.financeDate==='1d'?'selected':''}>Son 1 Gün (Bugün)</option><option value="3d" ${state.filters.financeDate==='3d'?'selected':''}>Son 3 Gün</option><option value="1w" ${state.filters.financeDate==='1w'?'selected':''}>Son 1 Hafta</option><option value="1m" ${state.filters.financeDate==='1m'?'selected':''}>Son 1 Ay</option></select>
+            <select onchange="updateFilter('financeType', this.value)" class="border border-stone-200 rounded-xl px-4 py-2 text-sm bg-stone-50 focus:outline-none"><option value="all">Tüm İşlemler</option><option value="income">Gelirler</option><option value="expense">Giderler</option></select>
+            <select onchange="updateFilter('financeDate', this.value)" class="border border-stone-200 rounded-xl px-4 py-2 text-sm bg-stone-50 focus:outline-none"><option value="all">Tüm Zamanlar</option><option value="1d">Son 1 Gün (Bugün)</option><option value="3d">Son 3 Gün</option><option value="1w">Son 1 Hafta</option><option value="1m">Son 1 Ay</option></select>
           </div>
           <div class="bg-white rounded-3xl border border-rose-50 shadow-sm overflow-hidden">
             <table class="w-full text-sm text-left"><thead class="bg-stone-50 text-stone-500 text-xs uppercase font-semibold border-b border-stone-100"><tr><th class="px-6 py-5">Tarih</th><th class="px-6 py-5">Açıklama</th><th class="px-6 py-5">Yöntem</th><th class="px-6 py-5 text-right">Tutar</th></tr></thead><tbody class="divide-y divide-stone-50">
@@ -445,7 +523,7 @@
           </div>
         `;
       }
-      // 4. STOK YÖNETİMİ
+      // 5. STOK YÖNETİMİ
       else if (state.adminTab === 'inventory') {
         content = `
           <div class="flex items-center justify-between mb-8"><h2 class="text-3xl text-stone-800 font-display font-semibold">Stok Yönetimi</h2><button onclick="state.modals.addStock=true; render()" class="bg-primary text-white px-6 py-3 rounded-2xl text-sm flex items-center gap-2 font-medium shadow-md"><i data-lucide="plus" class="w-4 h-4"></i> Stok Alımı Ekle</button></div>
@@ -454,7 +532,7 @@
           </tbody></table></div>
         `;
       }
-      // 5. HİZMETLER
+      // 6. HİZMETLER
       else if (state.adminTab === 'services') {
         content = `
           <div class="flex items-center justify-between mb-8"><h2 class="text-3xl text-stone-800 font-display font-semibold">Hizmetler</h2><button onclick="state.modals.addService=true; render()" class="bg-primary text-white px-6 py-3 rounded-2xl text-sm flex items-center gap-2 font-medium shadow-md"><i data-lucide="plus" class="w-4 h-4"></i> Hizmet Ekle</button></div>
@@ -466,26 +544,34 @@
           `).join('')}</div>
         `;
       }
-      // 6. UZMANLAR
+      // 7. UZMANLAR
       else if (state.adminTab === 'staff') {
         content = `
           <div class="flex items-center justify-between mb-8"><h2 class="text-3xl text-stone-800 font-display font-semibold">Uzman Kadrosu</h2><button onclick="state.modals.addStaff=true; render()" class="bg-primary text-white px-6 py-3 rounded-2xl text-sm flex items-center gap-2 font-medium shadow-md"><i data-lucide="plus" class="w-4 h-4"></i> Yeni Uzman Ekle</button></div>
-          <div class="grid md:grid-cols-2 gap-6">${STAFF.map(stf => `<div class="bg-white border border-rose-50 rounded-3xl p-6 shadow-sm flex items-start gap-5"><div class="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center text-primary shrink-0"><i data-lucide="user" class="w-7 h-7"></i></div><div><p class="text-stone-800 font-display text-2xl font-semibold">${stf.name}</p><p class="text-sm text-stone-500 font-medium mt-1">${stf.title}</p><div class="mt-4 flex flex-wrap gap-2">${stf.tags.map(tagId => SERVICES.find(s => s.id === tagId)?.name).filter(Boolean).map(srv => `<span class="px-3 py-1 bg-stone-50 border border-stone-100 text-stone-600 rounded-full text-[10px] uppercase font-semibold tracking-wider">${srv}</span>`).join('')}</div></div></div>`).join('')}</div>
+          <div class="grid md:grid-cols-2 gap-6">${STAFF.map(stf => `<div class="bg-white border border-rose-50 rounded-3xl p-6 shadow-sm flex items-start gap-5"><div class="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center text-primary shrink-0"><i data-lucide="user" class="w-7 h-7"></i></div><div><p class="text-zinc-900 font-display text-2xl font-semibold">${stf.name}</p><p class="text-sm text-stone-500 font-medium mt-1">${stf.title}</p><div class="mt-4 flex flex-wrap gap-2">${stf.tags.map(tagId => SERVICES.find(s => s.id === tagId)?.name).filter(Boolean).map(srv => `<span class="px-3 py-1 bg-stone-50 border border-stone-100 text-stone-600 rounded-full text-[10px] uppercase font-semibold tracking-wider">${srv}</span>`).join('')}</div></div></div>`).join('')}</div>
         `;
       }
-      // 7. SİTE AYARLARI
+      // 8. SİTE AYARLARI
       else if (state.adminTab === 'settings') {
         content = `
-          <h2 class="text-3xl text-stone-800 font-display font-semibold mb-8">Site Ayarları</h2>
+          <h2 class="text-3xl text-stone-800 font-display font-semibold mb-8">Sistem & Profil Ayarları</h2>
           <div class="flex gap-6 mb-8 border-b border-stone-200">
             <button onclick="setSettingsTab('contact')" class="pb-3 text-sm font-semibold uppercase tracking-wider ${state.settingsTab==='contact'?'text-primary border-b-2 border-primary':'text-stone-400'}">İletişim Bilgileri</button>
             <button onclick="setSettingsTab('gallery')" class="pb-3 text-sm font-semibold uppercase tracking-wider ${state.settingsTab==='gallery'?'text-primary border-b-2 border-primary':'text-stone-400'}">Galeri Görüntüleri</button>
+            <button onclick="setSettingsTab('users')" class="pb-3 text-sm font-semibold uppercase tracking-wider ${state.settingsTab==='users'?'text-primary border-b-2 border-primary':'text-stone-400'}">Personel Hesapları</button>
           </div>
         `;
         if(state.settingsTab === 'contact') {
           content += `<form onsubmit="saveContactInfo(event)" class="bg-white rounded-3xl p-8 border border-rose-50 shadow-sm max-w-2xl space-y-5"><div class="grid grid-cols-2 gap-5"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Telefon</label><input id="cPhone" value="${state.contact.phone}" class="w-full border border-stone-200 bg-stone-50 rounded-2xl px-5 py-4 focus:outline-none focus:ring-1 focus:ring-primary text-sm"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">E-posta</label><input id="cEmail" value="${state.contact.email}" class="w-full border border-stone-200 bg-stone-50 rounded-2xl px-5 py-4 focus:outline-none focus:ring-1 focus:ring-primary text-sm"></div></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Adres</label><input id="cAddress" value="${state.contact.address}" class="w-full border border-stone-200 bg-stone-50 rounded-2xl px-5 py-4 focus:outline-none focus:ring-1 focus:ring-primary text-sm"></div><div class="grid grid-cols-2 gap-5"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Instagram</label><input id="cInsta" value="${state.contact.instagram}" class="w-full border border-stone-200 bg-stone-50 rounded-2xl px-5 py-4 focus:outline-none focus:ring-1 focus:ring-primary text-sm"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Facebook</label><input id="cFace" value="${state.contact.facebook}" class="w-full border border-stone-200 bg-stone-50 rounded-2xl px-5 py-4 focus:outline-none focus:ring-1 focus:ring-primary text-sm"></div></div><button type="submit" class="bg-primary text-white px-10 py-4 rounded-full font-medium mt-4 shadow-md">Ayarları Kaydet</button></form>`;
+        } else if(state.settingsTab === 'gallery') {
+          content += `<form onsubmit="saveGalleryInfo(event)" class="bg-white rounded-3xl p-8 border border-rose-50 shadow-sm max-w-2xl space-y-5"><p class="text-sm text-stone-500 mb-4">Görsellerin tam bağlantı (URL) adreslerini giriniz.</p><input id="g1" value="${state.gallery[0]}" class="w-full border border-stone-200 bg-stone-50 rounded-2xl px-5 py-4 focus:outline-none text-sm"><input id="g2" value="${state.gallery[1]}" class="w-full border border-stone-200 bg-stone-50 rounded-2xl px-5 py-4 focus:outline-none text-sm"><input id="g3" value="${state.gallery[2]}" class="w-full border border-stone-200 bg-stone-50 rounded-2xl px-5 py-4 focus:outline-none text-sm"><input id="g4" value="${state.gallery[3]}" class="w-full border border-stone-200 bg-stone-50 rounded-2xl px-5 py-4 focus:outline-none text-sm"><button type="submit" class="bg-primary text-white px-10 py-4 rounded-full font-medium mt-4 shadow-md">Görselleri Güncelle</button></form>`;
         } else {
-          content += `<form onsubmit="saveGalleryInfo(event)" class="bg-white rounded-3xl p-8 border border-rose-50 shadow-sm max-w-2xl space-y-5"><p class="text-sm text-stone-500 mb-4">Görsellerin tam bağlantı (URL) adreslerini giriniz.</p><input id="g1" value="${state.gallery[0]}" class="w-full border border-stone-200 bg-stone-50 rounded-2xl px-5 py-4 focus:outline-none focus:ring-1 focus:ring-primary text-sm"><input id="g2" value="${state.gallery[1]}" class="w-full border border-stone-200 bg-stone-50 rounded-2xl px-5 py-4 focus:outline-none focus:ring-1 focus:ring-primary text-sm"><input id="g3" value="${state.gallery[2]}" class="w-full border border-stone-200 bg-stone-50 rounded-2xl px-5 py-4 focus:outline-none focus:ring-1 focus:ring-primary text-sm"><input id="g4" value="${state.gallery[3]}" class="w-full border border-stone-200 bg-stone-50 rounded-2xl px-5 py-4 focus:outline-none focus:ring-1 focus:ring-primary text-sm"><button type="submit" class="bg-primary text-white px-10 py-4 rounded-full font-medium mt-4 shadow-md">Görselleri Güncelle</button></form>`;
+          content += `
+            <div class="flex items-center justify-between mb-6"><h3 class="text-xl text-stone-800 font-display font-semibold">Sistem Personel Girişleri</h3><button onclick="state.modals.addUser=true; render()" class="bg-stone-800 text-white px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 font-medium"><i data-lucide="user-plus" class="w-4 h-4"></i> Personel Hesabı Ekle</button></div>
+            <div class="bg-white rounded-3xl border border-rose-50 shadow-sm overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-stone-50 text-stone-500 text-xs uppercase font-semibold border-b border-stone-100"><tr><th class="px-6 py-5">Personel Adı</th><th class="px-6 py-5">Erişim Yetkileri (Sayfalar)</th></tr></thead><tbody class="divide-y divide-stone-50">
+                ${USERS.map(u => `<tr class="hover:bg-rose-50/30"><td class="px-6 py-5"><p class="font-semibold text-stone-800">${u.name}</p><p class="text-xs text-stone-500 mt-1">${u.email} <span class="text-rose-400 ml-2">(${u.role})</span></p></td><td class="px-6 py-5"><div class="flex flex-wrap gap-2">${u.permissions.map(p => { const tl = allTabs.find(t=>t.id===p); return tl ? `<span class="px-2.5 py-1 bg-rose-50 text-primary rounded text-[10px] uppercase font-bold tracking-wider">${tl.label}</span>` : ''; }).join('')}</div></td></tr>`).join('')}
+            </tbody></table></div>
+          `;
         }
       }
 
@@ -496,7 +582,7 @@
             <nav class="flex-1 px-4 py-6 space-y-2">
               ${tabs.map(t => `<button onclick="setAdminTab('${t.id}')" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-sm transition-all ${state.adminTab === t.id ? 'bg-primary text-white shadow-md font-medium' : 'text-stone-500 hover:bg-rose-50 hover:text-primary'}"><i data-lucide="${t.icon}" class="w-5 h-5"></i> ${t.label}</button>`).join('')}
             </nav>
-            <div class="p-6 border-t border-rose-50"><button onclick="logoutAdmin()" class="w-full flex items-center justify-center gap-3 px-5 py-4 text-sm text-rose-400 hover:bg-rose-50 transition-colors rounded-2xl font-medium"><i data-lucide="log-out" class="w-5 h-5"></i> Güvenli Çıkış</button></div>
+            <div class="p-6 border-t border-rose-50"><button onclick="logoutAdmin()" class="w-full flex items-center justify-center gap-3 px-5 py-4 text-sm text-rose-400 hover:bg-rose-50 transition-colors rounded-2xl font-medium"><i data-lucide="log-out" class="w-5 h-5"></i> Çıkış Yap</button></div>
           </aside>
           <main class="flex-1 ml-72 p-10 lg:p-14 max-w-7xl pb-20">${content}</main>
         </div>
@@ -508,11 +594,11 @@
       let m = '';
       if(state.modals.postpone) {
         const apt = APPOINTMENTS.find(a => a.id === state.activeId);
-        m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-2">Zamanı Değiştir</h3><p class="text-sm text-stone-500 mb-6">${apt.customer} <br><span class="text-xs">${apt.service}</span></p><form onsubmit="savePostpone(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Yeni Tarih</label><input id="pDate" type="date" required value="${apt.date}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 focus:ring-1 focus:ring-primary focus:outline-none text-sm bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Yeni Saat</label><input id="pTime" type="time" required value="${apt.time}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 focus:ring-1 focus:ring-primary focus:outline-none text-sm bg-stone-50"></div><div class="flex gap-3 mt-8"><button type="button" onclick="state.modals.postpone=false; render()" class="flex-1 py-3.5 text-sm font-medium text-stone-500 bg-stone-100 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-blue-500 rounded-2xl shadow-md">Zamanı Kaydet</button></div></form></div></div>`;
+        m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-2">Zamanı Değiştir</h3><p class="text-sm text-stone-500 mb-6">${apt.customer} <br><span class="text-xs">${apt.service}</span></p><form onsubmit="savePostpone(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Yeni Tarih</label><input id="pDate" type="date" required value="${apt.date}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 text-sm bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Yeni Saat</label><input id="pTime" type="time" required value="${apt.time}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 text-sm bg-stone-50"></div><div class="flex gap-3 mt-8"><button type="button" onclick="state.modals.postpone=false; render()" class="flex-1 py-3.5 text-sm font-medium text-stone-500 bg-stone-100 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-blue-500 rounded-2xl shadow-md">Zamanı Kaydet</button></div></form></div></div>`;
       }
       if(state.modals.payment) {
         const apt = APPOINTMENTS.find(a => a.id === state.activeId); const srv = SERVICES.find(s => s.name === apt.service);
-        m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><div class="w-14 h-14 rounded-full bg-green-50 text-green-500 flex items-center justify-center mb-4"><i data-lucide="banknote" class="w-6 h-6"></i></div><h3 class="text-2xl text-stone-800 font-display font-semibold mb-2">Ödeme Al</h3><p class="text-sm text-stone-500 mb-6">${apt.customer} - ${apt.service}</p><form onsubmit="savePayment(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Tahsil Edilen Tutar (₺)</label><input id="payAmount" type="number" required value="${srv ? srv.priceMin : 0}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Ödeme Yöntemi</label><select id="payMethod" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"><option>Kredi Kartı</option><option>Nakit</option><option>Havale/EFT</option></select></div><div class="flex gap-3 mt-8"><button type="button" onclick="state.modals.payment=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-green-500 rounded-2xl shadow-md">Tamamla</button></div></form></div></div>`;
+        m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><div class="w-14 h-14 rounded-full bg-green-50 text-green-500 flex items-center justify-center mb-4"><i data-lucide="banknote" class="w-6 h-6"></i></div><h3 class="text-2xl text-stone-800 font-display font-semibold mb-2">Ödeme Al</h3><p class="text-sm text-stone-500 mb-6">${apt.customer} - ${apt.service}</p><form onsubmit="savePayment(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Tahsil Edilen Tutar (₺)</label><input id="payAmount" type="number" required value="${srv ? srv.priceMin : 0}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Ödeme Yöntemi</label><select id="payMethod" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"><option>Kredi Kartı</option><option>Nakit</option><option>Havale/EFT</option></select></div><div class="flex gap-3 mt-8"><button type="button" onclick="state.modals.payment=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 rounded-2xl text-stone-500">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-green-500 rounded-2xl shadow-md">Tamamla</button></div></form></div></div>`;
       }
       if(state.modals.addStock) {
         m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-6">Stok Ekle</h3><form onsubmit="saveStock(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Ürün Adı</label><input id="iName" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Miktar</label><input id="iStock" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Birim</label><input id="iUnit" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Kritik Uyarı</label><input id="iMin" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Birim Maliyet</label><input id="iCost" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div></div><div class="flex gap-3 mt-6"><button type="button" onclick="state.modals.addStock=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-primary rounded-2xl shadow-md">Kaydet</button></div></form></div></div>`;
@@ -525,6 +611,10 @@
       }
       if(state.modals.addStaff) {
         m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-xl w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-6">Yeni Uzman Ekle</h3><form onsubmit="saveStaff(event)" class="space-y-5"><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Ad Soyad</label><input id="newStaffName" required type="text" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Unvan / Meslek</label><input id="newStaffTitle" required type="text" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"></div></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-3">Uzmanlık Alanları (Hizmet Seçimi)</label><div class="grid grid-cols-2 gap-3 p-5 bg-rose-50/50 rounded-2xl border border-rose-100">${SERVICES.map(s => `<label class="flex items-center gap-3 text-sm text-stone-700 cursor-pointer"><input type="checkbox" value="${s.id}" class="service-checkbox w-4 h-4 accent-primary"> ${s.name}</label>`).join('')}</div></div><div class="flex gap-3 mt-6"><button type="button" onclick="state.modals.addStaff=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-primary rounded-2xl shadow-md">Uzmanı Kaydet</button></div></form></div></div>`;
+      }
+      if(state.modals.addUser) {
+        const adminTabs = [{id:'overview',l:'Genel Bakış'},{id:'startDay',l:'Güne Başla'},{id:'appointments',l:'Randevular'},{id:'finance',l:'Kasa/Gelir'},{id:'inventory',l:'Stok'},{id:'services',l:'Hizmetler'},{id:'staff',l:'Uzmanlar'},{id:'settings',l:'Ayarlar'}];
+        m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-lg w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-6">Personel Hesabı Oluştur</h3><form onsubmit="saveUser(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Kullanıcı Adı</label><input id="newUName" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Giriş E-postası</label><input id="newUEmail" required type="email" class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Şifre</label><input id="newUPass" required type="text" class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-3">Erişim İzinleri (Sayfalar)</label><div class="grid grid-cols-2 gap-3 p-5 bg-rose-50/50 rounded-2xl border border-rose-100">${adminTabs.map(t => `<label class="flex items-center gap-3 text-sm text-stone-700 cursor-pointer"><input type="checkbox" value="${t.id}" class="perm-checkbox w-4 h-4 accent-rose-500"> ${t.l}</label>`).join('')}</div></div><div class="flex gap-3 mt-6"><button type="button" onclick="state.modals.addUser=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-stone-800 rounded-2xl shadow-md">Oluştur</button></div></form></div></div>`;
       }
       return m;
     }
