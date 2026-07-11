@@ -570,23 +570,21 @@
         }
       }
 
-      const tabs = [
-        { id: 'overview', label: 'Genel Bakış', icon: 'pie-chart' },
-        { id: 'startDay', label: 'Güne Başla', icon: 'sun' },
-        { id: 'appointments', label: 'Tüm Randevular', icon: 'calendar-heart' },
-        { id: 'finance', label: 'Kasa & Gider', icon: 'wallet' },
-        { id: 'inventory', label: 'Stok Yönetimi', icon: 'package' },
-        { id: 'services', label: 'Hizmetler', icon: 'sparkles' },
-        { id: 'staff', label: 'Uzmanlar', icon: 'users' },
-        { id: 'settings', label: 'Site Ayarları', icon: 'settings-2' }
-      ].filter(t => state.currentUser.permissions.includes(t.id));
-
       return `
         <div class="flex bg-[#fdf2f8] min-h-screen relative z-10">
           <aside class="w-72 bg-white border-r border-rose-100 min-h-screen flex flex-col fixed left-0 top-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20 overflow-y-auto">
             <div class="p-8 flex items-center gap-3 border-b border-rose-50"><div class="w-10 h-10 rounded-full bg-rose-50 text-primary flex items-center justify-center"><i data-lucide="flower-2" class="w-6 h-6"></i></div><span class="text-2xl text-stone-800 font-display font-semibold tracking-wide">Belle<span class="text-primary italic">Rose</span></span></div>
             <nav class="flex-1 px-4 py-6 space-y-2">
-              ${tabs.map(t => `<button onclick="setAdminTab('${t.id}')" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-sm transition-all ${state.adminTab === t.id ? 'bg-primary text-white shadow-md font-medium' : 'text-stone-500 hover:bg-rose-50 hover:text-primary'}"><i data-lucide="${t.icon}" class="w-5 h-5"></i> ${t.label}</button>`).join('')}
+              ${[
+                { id: 'overview', label: 'Genel Bakış', icon: 'pie-chart' },
+                { id: 'startDay', label: 'Güne Başla', icon: 'sun' },
+                { id: 'appointments', label: 'Tüm Randevular', icon: 'calendar-heart' },
+                { id: 'finance', label: 'Kasa & Gider', icon: 'wallet' },
+                { id: 'inventory', label: 'Stok Yönetimi', icon: 'package' },
+                { id: 'services', label: 'Hizmetler', icon: 'sparkles' },
+                { id: 'staff', label: 'Uzmanlar', icon: 'users' },
+                { id: 'settings', label: 'Site Ayarları', icon: 'settings-2' }
+              ].filter(t => state.currentUser.permissions.includes(t.id)).map(t => `<button onclick="setAdminTab('${t.id}')" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-sm transition-all ${state.adminTab === t.id ? 'bg-primary text-white shadow-md font-medium' : 'text-stone-500 hover:bg-rose-50 hover:text-primary'}"><i data-lucide="${t.icon}" class="w-5 h-5"></i> ${t.label}</button>`).join('')}
             </nav>
             <div class="p-6 border-t border-rose-50"><button onclick="logoutAdmin()" class="w-full flex items-center justify-center gap-3 px-5 py-4 text-sm text-rose-400 hover:bg-rose-50 transition-colors rounded-2xl font-medium"><i data-lucide="log-out" class="w-5 h-5"></i> Çıkış Yap</button></div>
           </aside>
