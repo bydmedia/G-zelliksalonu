@@ -65,9 +65,9 @@
     ];
 
     let defaultStaff = [
-      { id: 1, name: "Elif Yılmaz", title: "Cilt & Güzellik Uzmanı", tags: [1, 5] },
-      { id: 2, name: "Merve Kaya", title: "Lazer & Vücut Uzmanı", tags: [2, 4] },
-      { id: 3, name: "Sena Demir", title: "Tırnak Uzmanı", tags: [3] }
+      { id: 1, name: "Elif Yılmaz", title: "Cilt & Güzellik Uzmanı", tags: [1, 5], bio: "Cilt anatomisi ve dermokozmetik alanında 8 yıllık tecrübeye sahip. Müşterilerin doğal güzelliğini ortaya çıkarmayı hedefleyen, yenilikçi ve bilimsel yöntemleri harmanlar.", img: "https://images.unsplash.com/photo-1595959183082-7b570b7e08e2?w=400&q=80" },
+      { id: 2, name: "Merve Kaya", title: "Lazer & Vücut Uzmanı", tags: [2, 4], bio: "Son teknoloji epilasyon ve vücut şekillendirme cihazlarında uzmanlaşmıştır. Hijyen, sonuç odaklılık ve müşteri konforu onun en büyük öncelikleridir.", img: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&q=80" },
+      { id: 3, name: "Sena Demir", title: "Tırnak Uzmanı", tags: [3], bio: "Nail art konusunda uluslararası sertifikalara sahip bir sanatçı. Ellerinize estetik, zarafet ve renk katmak için en trend tasarımları uygular.", img: "https://images.unsplash.com/photo-1580618672591-eb180b1a973f?w=400&q=80" }
     ];
 
     let defaultAppointments = [
@@ -90,7 +90,7 @@
 
     const MOCK_REVIEWS = Array.from({length: 30}, (_, i) => {
       const names = ["Ayşe T.", "Merve K.", "Zeynep B.", "Fatma S.", "Elif D.", "Selin Y.", "Büşra A.", "Cansu E.", "Derya Ç.", "Ece N."];
-      const texts = ["Harika bir deneyimdi, ambiyans çok şık.", "Personel inanılmaz zarif.", "Kullanılan ürünler çok kaliteli.", "Kesinlikle tavsiye ediyorum kızlar!", "Sonuçlardan inanılmaz memnun kaldım.", "Kendimi kraliçeler gibi hissettirdiler.", "Her şey mükemmeldi.", "Güler yüzlü hizmet.", "Artık tek adresim burası.", "Beklediğimden çok daha lüks."];
+      const texts = ["Harika bir deneyimdi, ambiyans çok şık.", "Personel inanılmaz zarif ve profesyonel.", "Kullanılan ürünler çok kaliteli.", "Kesinlikle tavsiye ediyorum kızlar!", "Sonuçlardan inanılmaz memnun kaldım.", "Kendimi kraliçeler gibi hissettirdiler.", "Her şey mükemmeldi.", "Güler yüzlü hizmet ve muazzam hijyen.", "Artık tek adresim burası.", "Beklediğimden çok daha lüks ve harika."];
       return { name: names[i % names.length], text: texts[i % texts.length] };
     });
 
@@ -106,6 +106,8 @@
       settingsTab: 'contact',
       modals: { postpone: false, payment: false, addFinance: false, addStock: false, addStaff: false, addUser: false, addService: false, density: false, waConfirm: false },
       activeId: null,
+      editStaffId: null, // Düzenlenen uzmanın ID'si
+      tempStaffImg: '', // Yeni/Düzenlenen uzman için fotoğraf (Base64 URL)
       filters: { aptStaff: '', aptService: '', aptName: '', financeType: 'all', financeDate: 'all' },
       densities: {}, 
       contact: { phone: '0850 123 45 67', whatsapp: '905555555555', email: 'hello@bellerose.com', address: 'Side Mah. Liman Cad. No:12, Manavgat/Antalya', instagram: '@bellerose.estetik', facebook: '/bellerose' },
@@ -160,7 +162,6 @@
         container.appendChild(heart);
       }
     }
-    
 
     function formatDate(dateStr) {
       if(!dateStr) return ''; const parts = dateStr.split('-');
@@ -218,7 +219,6 @@
     window.openPostpone = (id) => { state.activeId = id; state.modals.postpone = true; render(); };
     window.savePostpone = (e) => { e.preventDefault(); const apt = APPOINTMENTS.find(a => a.id === state.activeId); apt.date = document.getElementById('pDate').value; apt.time = document.getElementById('pTime').value; apt.status = "Zamanı Değiştirildi"; state.modals.postpone = false; saveData(); render(); };
     
-    // Ödeme alma ve İşlem tamamlama senkronu
     window.savePayment = (e) => { 
       e.preventDefault(); 
       const apt = APPOINTMENTS.find(a => a.id === state.activeId); 
@@ -233,7 +233,6 @@
       render(); 
     };
 
-    // Yoğunluk & Teyit Modülleri
     window.setDensity = (srvId, level) => { state.densities[srvId] = level; saveData(); render(); }; 
     window.confirmClient = (id, willAttend) => {
       if(willAttend) { 
@@ -250,7 +249,6 @@
     window.saveStock = (e) => { e.preventDefault(); const stock = parseInt(document.getElementById('iStock').value); const cost = parseFloat(document.getElementById('iCost').value); INVENTORY.push({ id: Date.now(), name: document.getElementById('iName').value, stock, unit: document.getElementById('iUnit').value, minAlert: parseInt(document.getElementById('iMin').value), cost }); const totalCost = stock * cost; if(totalCost > 0) TRANSACTIONS.push({ id: Date.now(), type: 'expense', source: 'inventory', desc: `Stok Alımı: ${document.getElementById('iName').value}`, amount: totalCost, method: 'Banka İşlemi', date: SYSTEM_TODAY }); state.modals.addStock = false; saveData(); render(); };
     window.saveService = (e) => { e.preventDefault(); SERVICES.push({ id: Date.now(), name: document.getElementById('sName').value, category: document.getElementById('sCat').value, duration: parseInt(document.getElementById('sDur').value), priceMin: parseInt(document.getElementById('sMin').value), priceMax: parseInt(document.getElementById('sMax').value), icon: "sparkles", img: "https://images.unsplash.com/photo-1616394584738-fc6e612e71c9?w=600&q=80", desc: "Yeni eklenen hizmet.", longDesc: "Hizmet açıklaması eklenmemiş." }); state.modals.addService = false; saveData(); render(); };
     window.deleteService = (id) => { if(confirm("Hizmeti silmek istediğinize emin misiniz?")) { SERVICES = SERVICES.filter(s => s.id !== id); saveData(); render(); } };
-    window.saveStaff = (e) => { e.preventDefault(); const tags = Array.from(document.querySelectorAll('.service-checkbox:checked')).map(cb => parseInt(cb.value)); if(tags.length === 0) return alert("En az bir uzmanlık alanı seçin."); STAFF.push({ id: Date.now(), name: document.getElementById('newStaffName').value, title: document.getElementById('newStaffTitle').value, tags }); state.modals.addStaff = false; saveData(); render(); };
     window.saveFinance = (e) => { e.preventDefault(); TRANSACTIONS.push({ id: Date.now(), type: document.getElementById('fType').value, source: "extra", desc: document.getElementById('fDesc').value, amount: parseFloat(document.getElementById('fAmount').value), method: document.getElementById('fMethod').value, date: SYSTEM_TODAY }); state.modals.addFinance = false; saveData(); render(); };
     window.saveContactInfo = (e) => { e.preventDefault(); state.contact = { phone: document.getElementById('cPhone').value, whatsapp: document.getElementById('cWa').value, email: document.getElementById('cEmail').value, address: document.getElementById('cAddress').value, instagram: document.getElementById('cInsta').value, facebook: document.getElementById('cFace').value }; alert("İletişim bilgileri güncellendi!"); saveData(); render(); };
 
@@ -268,6 +266,68 @@
       if(p.length > 2) { state.currentUser.pass = p; alert("Şifreniz başarıyla güncellendi!"); saveData(); }
     };
 
+    // UZMAN İŞLEMLERİ (Fotoğraf & Bio Yükleme ile)
+    window.openAddStaff = () => {
+      state.editStaffId = null;
+      state.tempStaffImg = '';
+      state.modals.addStaff = true;
+      render();
+    };
+
+    window.openEditStaff = (id) => {
+      state.editStaffId = id;
+      const stf = STAFF.find(s => s.id === id);
+      state.tempStaffImg = stf.img || '';
+      state.modals.addStaff = true;
+      render();
+    };
+
+    window.deleteStaff = (id) => {
+      if(confirm('Bu uzmanı sistemden ve web sitesinden silmek istediğinize emin misiniz?')) {
+          STAFF = STAFF.filter(s => s.id !== id);
+          saveData(); render();
+      }
+    };
+
+    window.handleStaffImage = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+              state.tempStaffImg = event.target.result; // Base64 Verisi
+              document.getElementById('staffImgPreview').src = event.target.result;
+          };
+          reader.readAsDataURL(file);
+      }
+    };
+
+    window.saveStaff = (e) => {
+      e.preventDefault();
+      const name = document.getElementById('newStaffName').value;
+      const title = document.getElementById('newStaffTitle').value;
+      const bio = document.getElementById('newStaffBio').value;
+      const tags = Array.from(document.querySelectorAll('.service-checkbox:checked')).map(cb => parseInt(cb.value));
+
+      if(tags.length === 0) return alert("En az bir uzmanlık alanı seçin.");
+
+      const imgData = state.tempStaffImg || 'https://images.unsplash.com/photo-1595959183082-7b570b7e08e2?w=400&q=80';
+
+      if (state.editStaffId) {
+          const stf = STAFF.find(s => s.id === state.editStaffId);
+          stf.name = name; stf.title = title; stf.bio = bio; stf.tags = tags;
+          stf.img = imgData;
+      } else {
+          STAFF.push({
+              id: Date.now(),
+              name, title, bio, tags, img: imgData
+          });
+      }
+
+      state.modals.addStaff = false;
+      state.editStaffId = null;
+      saveData(); render();
+    };
+
     // --- RENDER MİMARİSİ ---
     function render() {
       const app = document.getElementById('app');
@@ -283,6 +343,7 @@
             <span class="text-3xl text-primary font-display cursor-pointer tracking-wide" onclick="setPage('home')">Belle<span class="italic text-rose-300">Rose</span></span>
             <nav class="hidden md:flex items-center gap-8 text-sm text-stone-600 font-medium">
               <a href="#hizmetler" class="hover:text-primary transition-colors">Hizmetlerimiz</a>
+              <a href="#uzmanlarimiz" class="hover:text-primary transition-colors">Uzmanlarımız</a>
               <a href="#nasil-calisir" class="hover:text-primary transition-colors">Ne İşe Yarar?</a>
               <a href="#iletisim" class="hover:text-primary transition-colors">İletişim</a>
             </nav>
@@ -329,8 +390,35 @@
           </div>
         </section>
 
+        <!-- Uzmanlarımız -->
+        <section id="uzmanlarimiz" class="px-6 py-20 bg-[#fdf2f8]">
+          <div class="max-w-6xl mx-auto">
+            <div class="mb-14 text-center">
+              <span class="text-xs tracking-[0.2em] uppercase text-primary font-medium">Profesyonel Kadromuz</span>
+              <h2 class="mt-3 text-3xl md:text-5xl text-stone-800 font-display">Uzmanlarımız</h2>
+              <div class="h-px w-16 bg-rose-300 mt-6 mx-auto opacity-50"></div>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              ${STAFF.map(stf => `
+                <div class="bg-white rounded-[2rem] overflow-hidden shadow-sm hover:shadow-xl transition-all border border-rose-50 p-8 flex flex-col items-center text-center relative group">
+                  <div class="absolute top-0 inset-x-0 h-24 bg-gradient-to-b from-rose-50 to-transparent"></div>
+                  <div class="w-32 h-32 rounded-full overflow-hidden mb-5 border-4 border-white shadow-md relative z-10">
+                    <img src="${stf.img || 'https://images.unsplash.com/photo-1595959183082-7b570b7e08e2?w=400&q=80'}" class="w-full h-full object-cover">
+                  </div>
+                  <h3 class="text-2xl text-stone-800 font-display font-semibold mb-1 relative z-10">${stf.name}</h3>
+                  <p class="text-sm text-primary font-medium mb-4 relative z-10">${stf.title}</p>
+                  <p class="text-sm text-stone-500 leading-relaxed mb-6 flex-1 relative z-10">${stf.bio || 'Güzellik ve estetik alanında profesyonel hizmet sunar.'}</p>
+                  <div class="flex flex-wrap justify-center gap-2 mt-auto relative z-10">
+                    ${stf.tags.map(tagId => SERVICES.find(s => s.id === tagId)?.name).filter(Boolean).map(srv => `<span class="px-3 py-1 bg-rose-50 text-primary border border-rose-100 rounded-full text-[10px] uppercase font-semibold tracking-wider">${srv}</span>`).join('')}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </section>
+
         <!-- Ne İşe Yarar? -->
-        <section id="nasil-calisir" class="px-6 py-24 bg-[#fdf2f8]">
+        <section id="nasil-calisir" class="px-6 py-24 bg-white/60 backdrop-blur-sm border-y border-rose-50">
           <div class="max-w-4xl mx-auto">
             <div class="mb-16 text-center">
               <span class="text-xs tracking-[0.2em] uppercase text-primary font-medium">Bilgi Rehberi</span>
@@ -352,7 +440,7 @@
         </section>
 
         <!-- Galeri -->
-        <section class="px-6 py-20 bg-white/50 backdrop-blur-sm border-y border-rose-50">
+        <section class="px-6 py-20 bg-[#fdf2f8]">
           <div class="max-w-6xl mx-auto">
             <div class="mb-14 text-center">
               <span class="text-xs tracking-[0.2em] uppercase text-primary font-medium">Atmosferimiz</span>
@@ -366,7 +454,7 @@
         </section>
 
         <!-- Yorumlar -->
-        <section class="py-20 overflow-hidden relative">
+        <section class="py-20 overflow-hidden relative bg-white/60 backdrop-blur-sm border-t border-rose-50">
           <div class="mb-10 text-center px-6">
             <h2 class="text-3xl text-stone-800 font-display">Mutlu Kadınlar Kulübü</h2>
             <div class="h-px w-16 bg-rose-300 mt-6 mx-auto opacity-50"></div>
@@ -424,7 +512,7 @@
       else if (s === 1) { 
         canNext = d.staff !== null; 
         const av = d.service ? STAFF.filter(stf => stf.tags.includes(d.service.id)) : STAFF; 
-        b = av.length === 0 ? `<p class="text-stone-400 text-center py-10">Uygun uzman bulunmuyor.</p>` : `<div class="grid sm:grid-cols-2 gap-4">${av.map(stf => `<button onclick="setBookingStaff(${stf.id})" class="text-left border rounded-3xl p-5 flex items-center gap-4 transition-all ${d.staff?.id === stf.id ? 'border-primary bg-rose-50 ring-1 ring-rose-200' : 'border-stone-100 hover:border-rose-200'}"><div class="w-14 h-14 rounded-full bg-white flex items-center justify-center text-rose-300 shadow-sm"><i data-lucide="user" class="w-6 h-6"></i></div><div><p class="text-stone-800 text-lg font-display font-semibold">${stf.name}</p><p class="text-xs text-stone-500 mt-1">${stf.title}</p></div></button>`).join('')}</div>`; 
+        b = av.length === 0 ? `<p class="text-stone-400 text-center py-10">Uygun uzman bulunmuyor.</p>` : `<div class="grid sm:grid-cols-2 gap-4">${av.map(stf => `<button onclick="setBookingStaff(${stf.id})" class="text-left border rounded-3xl p-5 flex items-center gap-4 transition-all ${d.staff?.id === stf.id ? 'border-primary bg-rose-50 ring-1 ring-rose-200' : 'border-stone-100 hover:border-rose-200'}"><div class="w-14 h-14 rounded-full bg-white flex items-center justify-center text-rose-300 shadow-sm overflow-hidden border border-rose-50"><img src="${stf.img||'https://via.placeholder.com/150'}" class="w-full h-full object-cover"></div><div><p class="text-stone-800 text-lg font-display font-semibold">${stf.name}</p><p class="text-xs text-stone-500 mt-1">${stf.title}</p></div></button>`).join('')}</div>`; 
       }
       else if (s === 2) { 
         canNext = d.time !== null;
@@ -462,7 +550,7 @@
         { id: 'staff', label: 'Uzmanlar', icon: 'users' },
         { id: 'settings', label: 'Ayarlar', icon: 'settings-2' }
       ];
-      const userTabs = allTabs.filter(t => state.currentUser.permissions.includes(t.id));
+      const tabsData = allTabs.filter(t => state.currentUser.permissions.includes(t.id));
 
       let content = '';
 
@@ -593,8 +681,29 @@
       }
       else if (state.adminTab === 'staff') {
         content = `
-          <div class="flex items-center justify-between mb-8"><h2 class="text-3xl text-stone-800 font-display font-semibold">Uzman Kadrosu</h2><button onclick="state.modals.addStaff=true; render()" class="bg-primary text-white px-6 py-3 rounded-2xl text-sm flex items-center gap-2 font-medium shadow-md"><i data-lucide="plus" class="w-4 h-4"></i> Yeni Uzman Ekle</button></div>
-          <div class="grid md:grid-cols-2 gap-6">${STAFF.map(stf => `<div class="bg-white border border-rose-50 rounded-3xl p-6 shadow-sm flex items-start gap-5"><div class="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center text-primary shrink-0"><i data-lucide="user" class="w-7 h-7"></i></div><div><p class="text-zinc-900 font-display text-2xl font-semibold">${stf.name}</p><p class="text-sm text-stone-500 font-medium mt-1">${stf.title}</p><div class="mt-4 flex flex-wrap gap-2">${stf.tags.map(tagId => SERVICES.find(s => s.id === tagId)?.name).filter(Boolean).map(srv => `<span class="px-3 py-1 bg-stone-50 border border-stone-100 text-stone-600 rounded-full text-[10px] uppercase font-semibold tracking-wider">${srv}</span>`).join('')}</div></div></div>`).join('')}</div>
+          <div class="flex items-center justify-between mb-8">
+            <h2 class="text-3xl text-stone-800 font-display font-semibold">Uzman Kadrosu</h2>
+            <button onclick="openAddStaff()" class="bg-primary text-white px-6 py-3 rounded-2xl text-sm flex items-center gap-2 font-medium shadow-md"><i data-lucide="plus" class="w-4 h-4"></i> Yeni Uzman Ekle</button>
+          </div>
+          <div class="grid md:grid-cols-2 gap-6">${STAFF.map(stf => `
+            <div class="bg-white border border-rose-50 rounded-3xl p-6 shadow-sm flex items-start gap-5 hover:border-rose-200 transition-colors">
+              <img src="${stf.img || 'https://via.placeholder.com/400x400?text=Uzman'}" class="w-20 h-20 rounded-full object-cover border-4 border-rose-50 shrink-0 shadow-sm">
+              <div class="flex-1">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <p class="text-stone-800 font-display text-2xl font-semibold">${stf.name}</p>
+                    <p class="text-sm text-primary font-medium mt-0.5">${stf.title}</p>
+                  </div>
+                  <div class="flex gap-2">
+                    <button onclick="openEditStaff(${stf.id})" class="text-blue-500 hover:text-blue-700 bg-blue-50 p-2 rounded-xl transition-colors" title="Düzenle"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                    <button onclick="deleteStaff(${stf.id})" class="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded-xl transition-colors" title="Sil"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                  </div>
+                </div>
+                <p class="text-xs text-stone-500 mt-3 italic line-clamp-2" title="${stf.bio || ''}">"${stf.bio || 'Henüz biyografi eklenmemiş.'}"</p>
+                <div class="mt-4 flex flex-wrap gap-2">${stf.tags.map(tagId => SERVICES.find(s => s.id === tagId)?.name).filter(Boolean).map(srv => `<span class="px-3 py-1 bg-stone-50 border border-stone-100 text-stone-600 rounded-full text-[10px] uppercase font-semibold tracking-wider">${srv}</span>`).join('')}</div>
+              </div>
+            </div>
+          `).join('')}</div>
         `;
       }
       else if (state.adminTab === 'settings') {
@@ -621,20 +730,8 @@
         }
       }
 
-      const tabsData = [
-        { id: 'overview', label: 'Genel Bakış', icon: 'pie-chart' },
-        { id: 'startDay', label: 'Güne Başla', icon: 'sun' },
-        { id: 'appointments', label: 'Randevular', icon: 'calendar-heart' },
-        { id: 'finance', label: 'Kasa & Gider', icon: 'wallet' },
-        { id: 'inventory', label: 'Stok Yönetimi', icon: 'package' },
-        { id: 'services', label: 'Hizmetler', icon: 'sparkles' },
-        { id: 'staff', label: 'Uzmanlar', icon: 'users' },
-        { id: 'settings', label: 'Ayarlar', icon: 'settings-2' }
-      ].filter(t => state.currentUser.permissions.includes(t.id));
-
       return `
         <div class="flex flex-col bg-[#fdf2f8] min-h-screen relative z-10 pt-20">
-          
           <!-- TOP NAVBAR -->
           <div class="fixed top-0 left-0 right-0 h-20 bg-white/90 backdrop-blur-lg border-b border-rose-100 shadow-sm z-40 flex items-center px-6 justify-between transition-all">
             <div class="flex items-center gap-4">
@@ -702,9 +799,65 @@
       if(state.modals.addFinance) {
         m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-6">Finansal İşlem Ekle</h3><form onsubmit="saveFinance(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">İşlem Türü</label><select id="fType" class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"><option value="income">Gelir</option><option value="expense">Gider</option></select></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Açıklama</label><input id="fDesc" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Tutar (₺)</label><input id="fAmount" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Yöntem</label><select id="fMethod" class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"><option>Nakit</option><option>Kredi Kartı</option><option>Havale</option></select></div></div><div class="flex gap-3 mt-6"><button type="button" onclick="state.modals.addFinance=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-primary rounded-2xl shadow-md">Kaydet</button></div></form></div></div>`;
       }
+      
+      // GÜNCEL UZMAN EKLEME / DÜZENLEME MODALI
       if(state.modals.addStaff) {
-        m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-xl w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-6">Yeni Uzman Ekle</h3><form onsubmit="saveStaff(event)" class="space-y-5"><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Ad Soyad</label><input id="newStaffName" required type="text" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Unvan / Meslek</label><input id="newStaffTitle" required type="text" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"></div></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-3">Uzmanlık Alanları (Hizmet Seçimi)</label><div class="grid grid-cols-2 gap-3 p-5 bg-rose-50/50 rounded-2xl border border-rose-100">${SERVICES.map(s => `<label class="flex items-center gap-3 text-sm text-stone-700 cursor-pointer"><input type="checkbox" value="${s.id}" class="service-checkbox w-4 h-4 accent-primary"> ${s.name}</label>`).join('')}</div></div><div class="flex gap-3 mt-6"><button type="button" onclick="state.modals.addStaff=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-primary rounded-2xl shadow-md">Uzmanı Kaydet</button></div></form></div></div>`;
+        const isEdit = state.editStaffId !== null;
+        const stf = isEdit ? STAFF.find(s => s.id === state.editStaffId) : null;
+        const currentImg = state.tempStaffImg || (stf ? stf.img : 'https://via.placeholder.com/400x400?text=G%C3%B6rsel+Yok');
+        
+        m += `
+        <div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4">
+          <div class="bg-white rounded-[2rem] p-8 max-w-2xl w-full">
+            <h3 class="text-2xl text-stone-800 font-display font-semibold mb-6">${isEdit ? 'Uzmanı Düzenle' : 'Yeni Uzman Ekle'}</h3>
+            <form onsubmit="saveStaff(event)" class="space-y-5">
+              
+              <div class="flex flex-col sm:flex-row gap-6 items-center sm:items-start mb-4">
+                <div class="w-24 h-24 rounded-full overflow-hidden border-4 border-rose-50 shrink-0">
+                  <img id="staffImgPreview" src="${currentImg}" class="w-full h-full object-cover">
+                </div>
+                <div class="flex-1 w-full">
+                  <label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Profil Fotoğrafı Seçin</label>
+                  <input type="file" accept=".jpg, .jpeg, .png" onchange="handleStaffImage(event)" class="w-full text-sm text-stone-500 file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-rose-50 file:text-primary hover:file:bg-rose-100 cursor-pointer">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Ad Soyad</label>
+                  <input id="newStaffName" required type="text" value="${stf ? stf.name : ''}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50 text-sm">
+                </div>
+                <div>
+                  <label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Unvan / Meslek</label>
+                  <input id="newStaffTitle" required type="text" value="${stf ? stf.title : ''}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50 text-sm">
+                </div>
+              </div>
+
+              <div>
+                <label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Uzman Biyografisi (Bio)</label>
+                <textarea id="newStaffBio" required rows="3" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50 text-sm resize-none" placeholder="Müşterilere gösterilecek açıklama...">${stf ? (stf.bio||'') : ''}</textarea>
+              </div>
+
+              <div>
+                <label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-3">Uzmanlık Alanları (Hizmet Seçimi)</label>
+                <div class="grid grid-cols-2 gap-3 p-5 bg-rose-50/50 rounded-2xl border border-rose-100 max-h-32 overflow-y-auto">
+                  ${SERVICES.map(s => `
+                    <label class="flex items-center gap-3 text-sm text-stone-700 cursor-pointer">
+                      <input type="checkbox" value="${s.id}" class="service-checkbox w-4 h-4 accent-primary" ${(stf && stf.tags.includes(s.id)) ? 'checked' : ''}> ${s.name}
+                    </label>
+                  `).join('')}
+                </div>
+              </div>
+
+              <div class="flex gap-3 mt-6">
+                <button type="button" onclick="state.modals.addStaff=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button>
+                <button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-primary rounded-2xl shadow-md">Kaydet</button>
+              </div>
+            </form>
+          </div>
+        </div>`;
       }
+
       if(state.modals.addUser) {
         const adminTabs = [{id:'overview',l:'Genel Bakış'},{id:'startDay',l:'Güne Başla'},{id:'appointments',l:'Randevular'},{id:'finance',l:'Kasa/Gelir'},{id:'inventory',l:'Stok'},{id:'services',l:'Hizmetler'},{id:'staff',l:'Uzmanlar'},{id:'settings',l:'Ayarlar'}];
         m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-lg w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-6">Personel Hesabı Oluştur</h3><form onsubmit="saveUser(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Kullanıcı Adı</label><input id="newUName" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Giriş E-postası</label><input id="newUEmail" required type="email" class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Şifre</label><input id="newUPass" required type="text" class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-3">Erişim İzinleri (Sayfalar)</label><div class="grid grid-cols-2 gap-3 p-5 bg-rose-50/50 rounded-2xl border border-rose-100">${adminTabs.map(t => `<label class="flex items-center gap-3 text-sm text-stone-700 cursor-pointer"><input type="checkbox" value="${t.id}" class="perm-checkbox w-4 h-4 accent-rose-500"> ${t.l}</label>`).join('')}</div></div><div class="flex gap-3 mt-6"><button type="button" onclick="state.modals.addUser=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-stone-800 rounded-2xl shadow-md">Oluştur</button></div></form></div></div>`;
