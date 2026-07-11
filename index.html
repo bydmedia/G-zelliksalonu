@@ -17,7 +17,6 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #fda4af; border-radius: 10px; }
     
-    /* İkon Barı İçin Scroll Gizleme */
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -102,7 +101,7 @@
       showBooking: false, bookingStep: 0,
       bookingData: { service: null, staff: null, date: null, time: null, name: '', phone: '' },
       currentUser: null,
-      sidebarOpen: false, // Menü açılır kapanır durumu
+      sidebarOpen: false, 
       adminTab: 'overview',
       settingsTab: 'contact',
       modals: { postpone: false, payment: false, addFinance: false, addStock: false, addStaff: false, addUser: false, addService: false, density: false, waConfirm: false },
@@ -215,10 +214,24 @@
     window.toggleSidebar = () => { state.sidebarOpen = !state.sidebarOpen; render(); };
 
     // Randevu & İşlemler
-    window.completeAppointment = (id) => { APPOINTMENTS.find(a => a.id === id).status = "Tamamlandı"; saveData(); render(); };
     window.cancelAppointment = (id) => { if(confirm("Randevuyu iptal etmek istediğinize emin misiniz?")) { APPOINTMENTS.find(a => a.id === id).status = "İptal Edildi"; saveData(); render(); } };
+    window.openPostpone = (id) => { state.activeId = id; state.modals.postpone = true; render(); };
     window.savePostpone = (e) => { e.preventDefault(); const apt = APPOINTMENTS.find(a => a.id === state.activeId); apt.date = document.getElementById('pDate').value; apt.time = document.getElementById('pTime').value; apt.status = "Zamanı Değiştirildi"; state.modals.postpone = false; saveData(); render(); };
-    window.savePayment = (e) => { e.preventDefault(); const apt = APPOINTMENTS.find(a => a.id === state.activeId); TRANSACTIONS.push({ id: Date.now(), type: "income", source: "appointment", desc: `${apt.service} - ${apt.customer}`, amount: parseFloat(document.getElementById('payAmount').value), method: document.getElementById('payMethod').value, date: SYSTEM_TODAY }); apt.status = "Ödendi / Bitti"; state.modals.payment = false; saveData(); render(); };
+    
+    // Ödeme alma ve İşlem tamamlama senkronu
+    window.savePayment = (e) => { 
+      e.preventDefault(); 
+      const apt = APPOINTMENTS.find(a => a.id === state.activeId); 
+      const customDesc = document.getElementById('payDesc').value;
+      const amount = parseFloat(document.getElementById('payAmount').value);
+      const method = document.getElementById('payMethod').value;
+      
+      TRANSACTIONS.push({ id: Date.now(), type: "income", source: "appointment", desc: `${customDesc} - ${apt.customer}`, amount: amount, method: method, date: SYSTEM_TODAY }); 
+      apt.status = "Ödendi / Tamamlandı"; 
+      state.modals.payment = false; 
+      saveData(); 
+      render(); 
+    };
 
     // Yoğunluk & Teyit Modülleri
     window.setDensity = (srvId, level) => { state.densities[srvId] = level; saveData(); render(); }; 
@@ -371,22 +384,22 @@
           </div>
         </section>
 
-        <!-- İletişim -->
-        <section id="iletisim" class="px-6 py-20 bg-stone-900 text-stone-400">
-          <div class="max-w-6xl mx-auto grid md:grid-cols-2 gap-12">
+        <!-- İletişim (Daraltılmış) -->
+        <section id="iletisim" class="px-6 py-12 bg-stone-900 text-stone-400">
+          <div class="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 items-center">
             <div>
-              <span class="text-3xl text-white font-display font-semibold tracking-wide block mb-6">Belle<span class="text-rose-400 italic">Rose</span></span>
-              <p class="text-sm leading-relaxed max-w-sm mb-8">Zarafetiniz, bizim uzmanlığımız. Sizi salonumuzda ağırlamaktan mutluluk duyarız.</p>
-              <div class="space-y-4 text-sm">
-                <p class="flex items-center gap-4"><div class="w-8 h-8 rounded-full bg-rose-900/30 flex items-center justify-center"><i data-lucide="phone" class="w-4 h-4 text-rose-400"></i></div> ${state.contact.phone}</p>
-                <p class="flex items-center gap-4"><div class="w-8 h-8 rounded-full bg-rose-900/30 flex items-center justify-center"><i data-lucide="map-pin" class="w-4 h-4 text-rose-400"></i></div> ${state.contact.address}</p>
+              <span class="text-2xl text-white font-display font-semibold tracking-wide block mb-3">Belle<span class="text-rose-400 italic">Rose</span></span>
+              <p class="text-xs leading-relaxed max-w-sm mb-5">Zarafetiniz, bizim uzmanlığımız. Sizi salonumuzda ağırlamaktan mutluluk duyarız.</p>
+              <div class="space-y-3 text-sm flex flex-col sm:flex-row sm:gap-6 sm:space-y-0">
+                <p class="flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-rose-900/30 flex items-center justify-center"><i data-lucide="phone" class="w-3.5 h-3.5 text-rose-400"></i></div> ${state.contact.phone}</p>
+                <p class="flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-rose-900/30 flex items-center justify-center"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-400"></i></div> ${state.contact.address}</p>
               </div>
             </div>
-            <div class="md:text-right flex flex-col md:items-end justify-center">
-              <h3 class="text-white font-display text-2xl mb-6">Bizi Takip Edin</h3>
-              <div class="flex items-center gap-6">
-                <a href="#" class="flex items-center gap-2 hover:text-rose-400 transition-colors"><i data-lucide="instagram" class="w-6 h-6"></i> ${state.contact.instagram}</a>
-                <a href="#" class="flex items-center gap-2 hover:text-rose-400 transition-colors"><i data-lucide="facebook" class="w-6 h-6"></i> ${state.contact.facebook}</a>
+            <div class="md:text-right flex flex-col md:items-end mt-6 md:mt-0">
+              <h3 class="text-white font-display text-lg mb-3">Bizi Takip Edin</h3>
+              <div class="flex items-center gap-4">
+                <a href="#" class="flex items-center gap-2 hover:text-rose-400 transition-colors"><i data-lucide="instagram" class="w-5 h-5"></i> ${state.contact.instagram}</a>
+                <a href="#" class="flex items-center gap-2 hover:text-rose-400 transition-colors"><i data-lucide="facebook" class="w-5 h-5"></i> ${state.contact.facebook}</a>
               </div>
             </div>
           </div>
@@ -479,12 +492,12 @@
           <h2 class="text-3xl text-stone-800 font-display font-semibold mb-8">Güne Başla - Günlük Randevu Planı</h2>
           <div class="grid gap-4">
             ${todayApts.length === 0 ? `<div class="bg-white p-10 rounded-3xl text-center border border-rose-50 shadow-sm"><i data-lucide="check-circle-2" class="w-12 h-12 text-green-400 mx-auto mb-4"></i><p class="text-stone-500 font-medium">Bugün için bekleyen işleminiz kalmadı, harika iş çıkardınız!</p></div>` : todayApts.map(a => `
-              <div class="bg-white border-l-4 border-primary rounded-2xl p-6 shadow-sm flex items-center justify-between transition-all">
+              <div class="bg-white border-l-4 border-primary rounded-2xl p-6 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
                 <div class="flex gap-6 items-center">
                   <div class="text-center bg-rose-50 px-4 py-3 rounded-xl"><p class="text-xs text-stone-500 uppercase font-semibold mb-1">Saat</p><p class="text-xl font-bold text-primary">${a.time}</p></div>
                   <div><p class="text-lg font-semibold text-stone-800">${a.customer} <span class="text-sm font-normal text-stone-400 ml-2">${a.phone}</span></p><p class="text-stone-600 mt-1">${a.service} <span class="text-xs text-stone-400 mx-2">|</span> <i data-lucide="user" class="inline w-3 h-3 text-stone-400"></i> ${a.staff}</p></div>
                 </div>
-                <div><button onclick="completeAppointment(${a.id})" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-medium shadow-sm transition-colors flex gap-2 items-center"><i data-lucide="check" class="w-5 h-5"></i> İşlemi Tamamla</button></div>
+                <div><button onclick="state.activeId=${a.id}; state.modals.payment=true; render()" class="bg-primary hover-bg-primary text-white px-6 py-3 rounded-xl font-medium shadow-sm transition-colors flex gap-2 items-center"><i data-lucide="check-circle" class="w-5 h-5"></i> İşlemi Tamamla & Ödeme Al</button></div>
               </div>
             `).join('')}
           </div>
@@ -590,7 +603,7 @@
           <div class="flex gap-6 mb-8 border-b border-stone-200">
             <button onclick="setSettingsTab('contact')" class="pb-3 text-sm font-semibold uppercase tracking-wider ${state.settingsTab==='contact'?'text-primary border-b-2 border-primary':'text-stone-400'}">İletişim Bilgileri</button>
             <button onclick="setSettingsTab('gallery')" class="pb-3 text-sm font-semibold uppercase tracking-wider ${state.settingsTab==='gallery'?'text-primary border-b-2 border-primary':'text-stone-400'}">Galeri</button>
-            <button onclick="setSettingsTab('users')" class="pb-3 text-sm font-semibold uppercase tracking-wider ${state.settingsTab==='users'?'text-primary border-b-2 border-primary':'text-stone-400'}">Personel</button>
+            <button onclick="setSettingsTab('users')" class="pb-3 text-sm font-semibold uppercase tracking-wider ${state.settingsTab==='users'?'text-primary border-b-2 border-primary':'text-stone-400'}">Personel Hesapları</button>
           </div>
         `;
         if(state.settingsTab === 'contact') {
@@ -616,7 +629,7 @@
         { id: 'inventory', label: 'Stok Yönetimi', icon: 'package' },
         { id: 'services', label: 'Hizmetler', icon: 'sparkles' },
         { id: 'staff', label: 'Uzmanlar', icon: 'users' },
-        { id: 'settings', label: 'Site Ayarları', icon: 'settings-2' }
+        { id: 'settings', label: 'Ayarlar', icon: 'settings-2' }
       ].filter(t => state.currentUser.permissions.includes(t.id));
 
       return `
@@ -678,7 +691,7 @@
       }
       if(state.modals.payment) {
         const apt = APPOINTMENTS.find(a => a.id === state.activeId); const srv = SERVICES.find(s => s.name === apt.service);
-        m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><div class="w-14 h-14 rounded-full bg-green-50 text-green-500 flex items-center justify-center mb-4"><i data-lucide="banknote" class="w-6 h-6"></i></div><h3 class="text-2xl text-stone-800 font-display font-semibold mb-2">Ödeme Al</h3><p class="text-sm text-stone-500 mb-6">${apt.customer} - ${apt.service}</p><form onsubmit="savePayment(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Tahsil Edilen Tutar (₺)</label><input id="payAmount" type="number" required value="${srv ? srv.priceMin : 0}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Ödeme Yöntemi</label><select id="payMethod" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"><option>Kredi Kartı</option><option>Nakit</option><option>Havale/EFT</option></select></div><div class="flex gap-3 mt-8"><button type="button" onclick="state.modals.payment=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-green-500 rounded-2xl shadow-md">Tamamla</button></div></form></div></div>`;
+        m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><div class="w-14 h-14 rounded-full bg-green-50 text-green-500 flex items-center justify-center mb-4"><i data-lucide="banknote" class="w-6 h-6"></i></div><h3 class="text-2xl text-stone-800 font-display font-semibold mb-2">Ödeme Al & Tamamla</h3><p class="text-sm text-stone-500 mb-6">${apt.customer} - ${apt.time}</p><form onsubmit="savePayment(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Uygulanan İşlem(ler)</label><input id="payDesc" type="text" required value="${apt.service}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50 text-sm"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Tahsil Edilen Tutar (₺)</label><input id="payAmount" type="number" required value="${srv ? srv.priceMin : 0}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Ödeme Yöntemi</label><select id="payMethod" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"><option>Kredi Kartı</option><option>Nakit</option><option>Havale/EFT</option></select></div><div class="flex gap-3 mt-8"><button type="button" onclick="state.modals.payment=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-green-500 rounded-2xl shadow-md">İşlemi Tamamla</button></div></form></div></div>`;
       }
       if(state.modals.addStock) {
         m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-6">Stok Ekle</h3><form onsubmit="saveStock(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Ürün Adı</label><input id="iName" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Miktar</label><input id="iStock" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Birim</label><input id="iUnit" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Kritik Uyarı</label><input id="iMin" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Birim Maliyet</label><input id="iCost" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div></div><div class="flex gap-3 mt-6"><button type="button" onclick="state.modals.addStock=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-primary rounded-2xl shadow-md">Kaydet</button></div></form></div></div>`;
