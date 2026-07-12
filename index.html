@@ -23,18 +23,1053 @@
     .text-primary { color: #db2777; } .bg-primary { background-color: #f43f5e; }
     .hover-bg-primary:hover { background-color: #e11d48; }
     
+    /* Geliştirilmiş Uçuşan Kalpler */
     .hearts-bg { position: fixed; inset: 0; pointer-events: none; z-index: -1; overflow: hidden; background-color: #fff0f5; }
-    .floating-heart { position: absolute; color: #fda4af; opacity: 0; animation: floatHeart linear infinite; }
+    .floating-heart { position: absolute; color: #fb7185; opacity: 0; animation: floatHeart linear infinite; }
     @keyframes floatHeart { 
-        0% { transform: translate(0, 100vh) scale(0.6) rotate(0deg); opacity: 0; } 
-        10% { opacity: 0.6; } 
-        50% { transform: translate(30px, 40vh) scale(1.4) rotate(25deg); opacity: 0.8; } 
-        90% { opacity: 0.6; } 
-        100% { transform: translate(-30px, -10vh) scale(0.8) rotate(-25deg); opacity: 0; } 
+        0% { transform: translate(0, 110vh) scale(0.8) rotate(0deg); opacity: 0; } 
+        15% { opacity: 0.8; } 
+        50% { transform: translate(40px, 40vh) scale(1.6) rotate(25deg); opacity: 0.9; } 
+        85% { opacity: 0.8; } 
+        100% { transform: translate(-40px, -10vh) scale(1) rotate(-25deg); opacity: 0; } 
     }
 
     .marquee-container { overflow: hidden; white-space: nowrap; position: relative; width: 100%; }
     .marquee-content { display: inline-block; animation: marquee 40s linear infinite; }
+    .marquee-content:hover { animation-play-state: paused; }
+    @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+    .glass-panel { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); }
+    .mini-chart { display: flex; align-items: flex-end; gap: 3px; height: 32px; }
+    .mini-bar { background-color: #db2777; width: 6px; border-radius: 3px 3px 0 0; opacity: 0.7; }
+  </style>
+</head>
+<body class="text-stone-600 antialiased">
+
+  <div class="hearts-bg" id="hearts-container"></div>
+  <div id="app"></div>
+
+  <script>
+    const SYSTEM_TODAY = "2026-07-12"; 
+
+    // --- SİSTEM SABİTLERİ ---
+    const ADMIN_PAGES = [
+      { id: 'overview', label: 'Genel Bakış & CRM', icon: 'pie-chart' },
+      { id: 'startDay', label: 'Güne Başla', icon: 'sun' },
+      { id: 'appointments', label: 'Randevular', icon: 'calendar-heart' },
+      { id: 'finance', label: 'Kasa & Gider', icon: 'wallet' },
+      { id: 'inventory', label: 'Stok Yönetimi', icon: 'package' },
+      { id: 'services', label: 'Hizmetler', icon: 'sparkles' },
+      { id: 'staff', label: 'Uzmanlar', icon: 'users' },
+      { id: 'settings', label: 'Ayarlar', icon: 'settings-2' }
+    ];
+
+    // --- BAŞLANGIÇ VERİLERİ ---
+    let defaultUsers = [
+      { id: 1, name: "Kurucu / Yönetici", email: "admin@bellerose.com", pass: "bellerose2026", role: "Süper Admin", permissions: ['overview', 'startDay', 'appointments', 'finance', 'inventory', 'services', 'staff', 'settings'] }
+    ];
+
+    let defaultServices = [
+      { id: 1, name: "Medikal Cilt Bakımı", category: "Cilt", duration: 60, priceMin: 1200, priceMax: 1500, icon: "sparkles", img: "https://images.unsplash.com/photo-1616394584738-fc6e612e71c9?w=600&q=80", desc: "Derinlemesine temizlik ile cildinizi yeniler.", longDesc: "Cildin alt katmanlarına inerek birikmiş kir, yağ ve ölü hücreleri arındırır. Cilt tipinize uygun profesyonel serumlar ve maskeler kullanılarak nem dengesi sağlanır. Gözenekleri sıkılaştırır ve akne oluşumunu engeller." },
+      { id: 2, name: "Buz Lazer Epilasyon", category: "Lazer", duration: 45, priceMin: 1800, priceMax: 2200, icon: "zap", img: "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=600&q=80", desc: "Acısız ve ağrısız kalıcı pürüzsüzlük.", longDesc: "Gelişmiş soğutucu başlığı sayesinde kıl köklerini dondurarak acı hissini ortadan kaldırır. Dört mevsim uygulanabilen bu teknoloji ile istenmeyen tüylere kalıcı olarak veda edersiniz." },
+      { id: 3, name: "Kalıcı Oje & Nail Art", category: "Tırnak", duration: 60, priceMin: 600, priceMax: 900, icon: "pen-tool", img: "https://images.unsplash.com/photo-1522337660859-02fbefca4702?w=600&q=80", desc: "Haftalarca bozulmayan kusursuz tırnaklar.", longDesc: "Normal ojelere göre çok daha dayanıklı olan kalıcı oje, UV ışınları ile sabitlenir. Çizilme, soyulma veya matlaşma yapmadan 3-4 hafta boyunca ilk günkü parlaklığını korur." },
+      { id: 4, name: "Bölgesel Zayıflama (G5)", category: "Vücut", duration: 40, priceMin: 900, priceMax: 1100, icon: "activity", img: "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=600&q=80", desc: "Sıkılaşma ve selülit tedavisinde kesin çözüm.", longDesc: "Ritmik masaj ve titreşim yöntemi ile kan akışını hızlandırır. Yağ yakımını destekler, ödem attırır ve özellikle selülitli bölgelerde gözle görülür bir pürüzsüzlük ve sıkılaşma sağlar." },
+      { id: 5, name: "İpek Kirpik & Lifting", category: "Göz", duration: 90, priceMin: 800, priceMax: 1200, icon: "eye", img: "https://images.unsplash.com/photo-1512496015851-a1fbbfc69a04?w=600&q=80", desc: "Büyüleyici ve doğal bakışlar.", longDesc: "Kendi kirpiklerinizin uzunluğuna ve yapısına uygun olarak tek tek eklenen ipek kirpikler, maskara kullanmanıza gerek kalmadan yoğun, kıvrık ve derin bakışlara sahip olmanızı sağlar." },
+      { id: 6, name: "Dermapen 4 Tedavisi", category: "Cilt", duration: 50, priceMin: 1400, priceMax: 1800, icon: "target", img: "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=600&q=80", desc: "Leke ve iz onarımında mikroiğneleme teknolojisi.", longDesc: "Cilt yüzeyinde mikro kanallar açılarak cildin kendi kendini onarma süreci tetiklenir. Kolajen üretimini artırır; akne izleri, ince kırışıklıklar ve güneş lekelerinin tedavisinde son derece etkilidir." },
+      { id: 7, name: "Altın İğne (Radyofrekans)", category: "Cilt", duration: 60, priceMin: 2500, priceMax: 3500, icon: "sun", img: "https://images.unsplash.com/photo-1515377905703-c4788e51af15?w=600&q=80", desc: "Ameliyatsız yüz germe ve gençleşme.", longDesc: "Özel tasarlanmış altın iğneler ile cilt altına radyofrekans enerjisi iletilir. Cildin elastikiyetini geri kazandırır, sarkmaları toparlar ve anında daha genç, parlak bir görünüm sunar." },
+      { id: 8, name: "Dudak Renklendirme", category: "Makyaj", duration: 120, priceMin: 3000, priceMax: 4000, icon: "smile", img: "https://images.unsplash.com/photo-1586525198428-225f6f12cff5?w=600&q=80", desc: "Soluk dudaklara kalıcı canlılık.", longDesc: "Doğal bitkisel pigmentler kullanılarak dudak kontürünün belirginleştirilmesi ve renklendirilmesi işlemidir. Solgun görünen dudakları daha canlı, dolgun ve çekici hale getirir." },
+      { id: 9, name: "Microblading 3D", category: "Makyaj", duration: 120, priceMin: 3500, priceMax: 4500, icon: "edit", img: "https://images.unsplash.com/photo-1516975080661-46bbf0f4f9f7?w=600&q=80", desc: "Seyrek kaşlara doğal ve kalıcı dolgunluk.", longDesc: "Özel altın oran pergeli ile yüz hatlarınıza en uygun kaş tasarımı yapılır. Kendi kaş kılınız kalınlığında çizimler yapılarak tamamen doğal, yoğun ve estetik bir kaş profili oluşturulur." },
+      { id: 10, name: "Saç PRP & Mezoterapi", category: "Saç", duration: 40, priceMin: 1500, priceMax: 2000, icon: "scissors", img: "https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?w=600&q=80", desc: "Saç dökülmesini durduran vitamin kompleksi.", longDesc: "Zengin plazmanın veya özel vitamin kokteyllerinin saç derisine enjekte edilmesiyle saç kökleri beslenir. Dökülmeyi durdurur ve yeni saç oluşumunu destekler." },
+      { id: 11, name: "Selülit Masajı & Lenf Drenaj", category: "Vücut", duration: 50, priceMin: 700, priceMax: 900, icon: "droplet", img: "https://images.unsplash.com/photo-1519823551278-64ac92734fb1?w=600&q=80", desc: "Kan dolaşımını hızlandıran rahatlatıcı masaj.", longDesc: "Özel masaj teknikleri ile dokular arası biriken sıvıların atılması sağlanır. Selülit görünümünü hafifletirken vücutta detoks etkisi yaratarak rahatlama sağlar." },
+      { id: 12, name: "Lazer Karbon Peeling", category: "Cilt", duration: 45, priceMin: 1600, priceMax: 2000, icon: "moon", img: "https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=600&q=80", desc: "Gözenek sıkılaştırıcı Hollywood ışıltısı.", longDesc: "Cilt yüzeyine sürülen medikal karbon solüsyonu lazer atışlarıyla patlatılır. Ciltteki ölü deriyi, yağı ve kiri anında temizler; gözenekleri küçültüp cilde anında parlaklık verir." }
+    ];
+
+    let defaultStaff = [
+      { id: 1, name: "Elif Yılmaz", title: "Cilt & Güzellik Uzmanı", tags: [1, 6, 7, 12], bio: "Cilt anatomisi ve dermokozmetik alanında 8 yıllık tecrübeye sahip. Yenilikçi ve bilimsel yöntemleri harmanlar.", img: "https://images.unsplash.com/photo-1595959183082-7b570b7e08e2?w=400&q=80" },
+      { id: 2, name: "Merve Kaya", title: "Lazer & Vücut Uzmanı", tags: [2, 4, 11], bio: "Son teknoloji epilasyon ve vücut şekillendirme cihazlarında uzmanlaşmıştır.", img: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&q=80" },
+      { id: 3, name: "Sena Demir", title: "Kalıcı Makyaj & Tırnak Uzmanı", tags: [3, 5, 8, 9], bio: "Nail art ve mikro-pigmentasyon konusunda uluslararası sertifikalara sahip bir sanatçı.", img: "https://images.unsplash.com/photo-1580618672591-eb180b1a973f?w=400&q=80" }
+    ];
+
+    let defaultAppointments = [
+      { id: 101, customer: "Zeynep Arslan", phone: "0532 111 2233", service: "Medikal Cilt Bakımı", staff: "Elif Yılmaz", date: "2026-07-12", time: "10:00", status: "Bekliyor", isConfirmed: true },
+      { id: 102, customer: "Merve Şahin", phone: "0555 444 5566", service: "Kalıcı Oje & Nail Art", staff: "Sena Demir", date: "2026-07-12", time: "14:30", status: "Bekliyor", isConfirmed: false },
+      { id: 103, customer: "Ayşe Yılmaz", phone: "0533 222 1100", service: "Buz Lazer Epilasyon", staff: "Merve Kaya", date: "2026-07-11", time: "16:00", status: "Tamamlandı", isConfirmed: true },
+      { id: 104, customer: "Ceyda Polat", phone: "0544 333 4455", service: "Altın İğne (Radyofrekans)", staff: "Elif Yılmaz", date: "2026-07-13", time: "11:00", status: "Onaylı", isConfirmed: true }
+    ];
+
+    let defaultInventory = [
+      { id: 1, name: "Hyaluronik Asit Serum", stock: 12, unit: "Şişe", minAlert: 5, cost: 450 }
+    ];
+
+    let defaultTransactions = [
+      { id: 1, type: "income", source: "appointment", desc: "Medikal Cilt Bakımı - Zeynep A.", amount: 1200, method: "Kredi Kartı", date: "2026-07-12" },
+      { id: 2, type: "expense", source: "inventory", desc: "Stok Alımı: Serum Takviyesi", amount: 900, method: "Havale", date: "2026-07-11" }
+    ];
+
+    // --- AKTİF DEĞİŞKENLER ---
+    let USERS, SERVICES, STAFF, APPOINTMENTS, INVENTORY, TRANSACTIONS;
+
+    const MOCK_REVIEWS = Array.from({length: 30}, (_, i) => {
+      const names = ["Ayşe T.", "Merve K.", "Zeynep B.", "Fatma S.", "Elif D.", "Selin Y.", "Büşra A.", "Cansu E.", "Derya Ç.", "Ece N."];
+      const texts = ["Harika bir deneyimdi, ambiyans çok şık.", "Personel inanılmaz zarif.", "Kullanılan ürünler çok kaliteli.", "Kesinlikle tavsiye ediyorum kızlar!", "Sonuçlardan inanılmaz memnun kaldım.", "Kendimi kraliçeler gibi hissettirdiler.", "Her şey mükemmeldi.", "Güler yüzlü hizmet.", "Artık tek adresim burası.", "Beklediğimden çok daha lüks."];
+      return { name: names[i % names.length], text: texts[i % texts.length] };
+    });
+
+    // --- STATE ---
+    let state = {
+      mode: window.location.hash === '#admin' ? 'admin' : 'site',
+      page: 'home',
+      showBooking: false, bookingStep: 0,
+      bookingData: { service: null, staff: null, date: null, time: null, name: '', phone: '' },
+      currentUser: null,
+      sidebarOpen: false, 
+      adminTab: 'overview',
+      settingsTab: 'contact',
+      modals: { postpone: false, payment: false, addFinance: false, addStock: false, addStaff: false, addUser: false, addService: false, density: false, waConfirm: false, clearHistory: false },
+      activeId: null,
+      editStaffId: null, tempStaffImg: '',
+      editServiceId: null, tempServiceImg: '',
+      filters: { aptStaff: '', aptService: '', aptName: '', aptStatus: 'all', aptSort: 'asc', financeType: 'all', financeDate: 'all' },
+      densities: {}, 
+      contact: { phone: '0850 123 45 67', whatsapp: '905555555555', email: 'hello@bellerose.com', address: 'Side Mah. Liman Cad. No:12, Manavgat/Antalya', instagram: '@bellerose.estetik', facebook: '/bellerose' },
+      gallery: [
+        'https://images.unsplash.com/photo-1600948836101-f9ffda59d250?auto=format&fit=crop&w=600&q=80',
+        'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=600&q=80',
+        'https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=600&q=80',
+        'https://images.unsplash.com/photo-1516975080661-46bbf0f4f9f7?auto=format&fit=crop&w=600&q=80'
+      ]
+    };
+
+    // --- LOCAL STORAGE (VERİ KALICILIĞI) ---
+    function loadData() {
+        try {
+            const saved = localStorage.getItem('belleRoseData_v4');
+            if (saved) {
+                const data = JSON.parse(saved);
+                USERS = data.USERS || defaultUsers;
+                SERVICES = data.SERVICES || defaultServices;
+                STAFF = data.STAFF || defaultStaff;
+                APPOINTMENTS = data.APPOINTMENTS || defaultAppointments;
+                INVENTORY = data.INVENTORY || defaultInventory;
+                TRANSACTIONS = data.TRANSACTIONS || defaultTransactions;
+                if(data.contact) state.contact = data.contact;
+                if(data.gallery) state.gallery = data.gallery;
+                if(data.densities) state.densities = data.densities;
+            } else {
+                throw new Error("No data");
+            }
+        } catch(e) {
+            USERS = defaultUsers; SERVICES = defaultServices; STAFF = defaultStaff; 
+            APPOINTMENTS = defaultAppointments; INVENTORY = defaultInventory; TRANSACTIONS = defaultTransactions;
+            saveData();
+        }
+    }
+    
+    function saveData() {
+        localStorage.setItem('belleRoseData_v4', JSON.stringify({
+            USERS, SERVICES, STAFF, APPOINTMENTS, INVENTORY, TRANSACTIONS, 
+            contact: state.contact, gallery: state.gallery, densities: state.densities
+        }));
+    }
+
+    window.addEventListener('hashchange', () => { state.mode = window.location.hash === '#admin' ? 'admin' : 'site'; render(); });
+
+    function initHearts() {
+      const container = document.getElementById('hearts-container');
+      if(!container) return;
+      container.innerHTML = '';
+      for(let i=0; i<25; i++) {
+        const heart = document.createElement('div');
+        heart.className = 'floating-heart';
+        heart.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>';
+        heart.style.left = Math.random() * 100 + 'vw';
+        heart.style.animationDuration = (Math.random() * 10 + 8) + 's';
+        heart.style.animationDelay = (Math.random() * 5) + 's';
+        container.appendChild(heart);
+      }
+    }
+
+    function formatDate(dateStr) {
+      if(!dateStr) return ''; const parts = dateStr.split('-');
+      return parts.length === 3 ? `${parts[2]}.${parts[1]}.${parts[0].slice(2)}` : dateStr;
+    }
+    function getDateDiffDays(date1, date2) {
+      const d1 = new Date(date1); d1.setHours(0,0,0,0);
+      const d2 = new Date(date2); d2.setHours(0,0,0,0);
+      return Math.floor(Math.abs(d2 - d1) / (1000 * 60 * 60 * 24));
+    }
+    function generateBars() {
+      return Array.from({length: 5}).map(() => `<div class="mini-bar" style="height: ${Math.random() * 24 + 8}px"></div>`).join('');
+    }
+    function formatPhoneForWA(phone) {
+      if(!phone) return '';
+      let p = phone.replace(/\D/g, '');
+      if(p.startsWith('0')) return '9' + p;
+      if(!p.startsWith('90')) return '90' + p;
+      return p;
+    }
+
+    // --- GLOBAL FONKSİYONLAR ---
+    window.setPage = (page) => { state.page = page; window.scrollTo(0,0); render(); };
+    window.updateFilter = (field, val) => { state.filters[field] = val; render(); };
+    window.handleInput = (field, el) => { state.bookingData[field] = el.value; const btn = document.getElementById('confirm-btn'); if(btn) btn.disabled = !(state.bookingData.name.length > 2 && state.bookingData.phone.length > 9); };
+
+    // --- RANDEVU SİHİRBAZI ---
+    window.openBooking = () => { state.showBooking = true; state.bookingStep = 0; state.bookingData = { service: null, staff: null, date: null, time: null, name: '', phone: '' }; render(); };
+    window.closeBooking = () => { state.showBooking = false; render(); };
+    window.setBookingService = (id) => { state.bookingData.service = SERVICES.find(s => s.id === id); render(); };
+    window.setBookingStaff = (id) => { state.bookingData.staff = STAFF.find(s => s.id === id); render(); };
+    window.setBookingTime = (time) => { state.bookingData.time = time; state.bookingData.date = SYSTEM_TODAY; render(); };
+    window.nextBookingStep = () => { 
+      if(state.bookingStep === 3) {
+        APPOINTMENTS.push({ id: Date.now(), customer: state.bookingData.name, phone: state.bookingData.phone, service: state.bookingData.service.name, staff: state.bookingData.staff.name, date: state.bookingData.date, time: state.bookingData.time, status: "Bekliyor", isConfirmed: false });
+        saveData(); 
+        state.bookingStep = 4;
+      } else { state.bookingStep++; } render(); 
+    };
+    window.prevBookingStep = () => { if(state.bookingStep > 0) state.bookingStep--; render(); };
+
+    // --- ADMİN FONKSİYONLARI ---
+    window.loginAdmin = (e) => { 
+      e.preventDefault(); 
+      const email = document.getElementById('adminEmail').value; 
+      const pass = document.getElementById('adminPass').value; 
+      const user = USERS.find(u => u.email === email && u.pass === pass);
+      if(user) { state.currentUser = user; state.adminTab = user.permissions[0]; render(); } 
+      else alert('Hatalı E-posta veya Şifre girdiniz.'); 
+    };
+    window.logoutAdmin = () => { state.currentUser = null; window.location.hash = '#site'; };
+    window.setAdminTab = (tab) => { state.adminTab = tab; render(); };
+    window.setSettingsTab = (tab) => { state.settingsTab = tab; render(); };
+    window.toggleSidebar = () => { state.sidebarOpen = !state.sidebarOpen; render(); };
+
+    // Randevu & İşlemler
+    window.cancelAppointment = (id) => { if(confirm("Randevuyu iptal etmek istediğinize emin misiniz?")) { APPOINTMENTS.find(a => a.id === id).status = "İptal Edildi"; saveData(); render(); } };
+    window.deleteAppointment = (id) => { if(confirm("Bu randevuyu kalıcı olarak silmek istediğinize emin misiniz?")) { APPOINTMENTS = APPOINTMENTS.filter(a => a.id !== id); saveData(); render(); } };
+    
+    window.openPostpone = (id) => { state.activeId = id; state.modals.postpone = true; render(); };
+    window.savePostpone = (e) => { e.preventDefault(); const apt = APPOINTMENTS.find(a => a.id === state.activeId); apt.date = document.getElementById('pDate').value; apt.time = document.getElementById('pTime').value; apt.status = "Zamanı Değiştirildi"; state.modals.postpone = false; saveData(); render(); };
+    
+    window.savePayment = (e) => { 
+      e.preventDefault(); 
+      const apt = APPOINTMENTS.find(a => a.id === state.activeId); 
+      const customDesc = document.getElementById('payDesc').value;
+      const amount = parseFloat(document.getElementById('payAmount').value);
+      const method = document.getElementById('payMethod').value;
+      TRANSACTIONS.push({ id: Date.now(), type: "income", source: "appointment", desc: `${customDesc} - ${apt.customer}`, amount: amount, method: method, date: SYSTEM_TODAY }); 
+      apt.status = "Ödendi / Tamamlandı"; state.modals.payment = false; saveData(); render(); 
+    };
+
+    window.clearAppointmentHistory = (e) => {
+        e.preventDefault();
+        const range = document.getElementById('clearRange').value;
+        let start = null, end = null;
+        const today = new Date(SYSTEM_TODAY); today.setHours(0,0,0,0);
+
+        if (range === '1d') { start = new Date(today); end = new Date(today); }
+        else if (range === '3d') { start = new Date(today); start.setDate(start.getDate()-3); end = new Date(today); }
+        else if (range === '1w') { start = new Date(today); start.setDate(start.getDate()-7); end = new Date(today); }
+        else if (range === '1m') { start = new Date(today); start.setDate(start.getDate()-30); end = new Date(today); }
+        else if (range === 'custom') {
+            const sVal = document.getElementById('clearStart').value;
+            const eVal = document.getElementById('clearEnd').value;
+            if(!sVal || !eVal) return alert("Lütfen özel tarih aralığı seçin.");
+            start = new Date(sVal); end = new Date(eVal);
+        }
+
+        if(!start || !end) return;
+        start.setHours(0,0,0,0); end.setHours(23,59,59,999);
+
+        if(confirm('Belirtilen aralıktaki tüm randevular silinecek. Onaylıyor musunuz?')) {
+            APPOINTMENTS = APPOINTMENTS.filter(a => {
+                const d = new Date(a.date); d.setHours(12,0,0,0);
+                return d < start || d > end; 
+            });
+            saveData(); state.modals.clearHistory = false; render();
+        }
+    };
+
+    window.setDensity = (srvId, level) => { state.densities[srvId] = level; saveData(); render(); }; 
+    window.confirmClient = (id, willAttend) => {
+      if(willAttend) { APPOINTMENTS.find(a => a.id === id).isConfirmed = true; alert("Teyit edildi!"); } 
+      else { APPOINTMENTS = APPOINTMENTS.filter(a => a.id !== id); alert("Randevu silindi."); }
+      saveData(); render();
+    };
+
+    // Diğer Kayıt İşlemleri
+    window.saveStock = (e) => { e.preventDefault(); const stock = parseInt(document.getElementById('iStock').value); const cost = parseFloat(document.getElementById('iCost').value); const name = document.getElementById('iName').value; INVENTORY.push({ id: Date.now(), name, stock, unit: document.getElementById('iUnit').value, minAlert: parseInt(document.getElementById('iMin').value), cost }); const totalCost = stock * cost; if(totalCost > 0) TRANSACTIONS.push({ id: Date.now(), type: 'expense', source: 'inventory', desc: `Stok Alımı: ${name}`, amount: totalCost, method: 'Banka İşlemi', date: SYSTEM_TODAY }); state.modals.addStock = false; saveData(); render(); };
+    window.saveFinance = (e) => { e.preventDefault(); TRANSACTIONS.push({ id: Date.now(), type: document.getElementById('fType').value, source: "extra", desc: document.getElementById('fDesc').value, amount: parseFloat(document.getElementById('fAmount').value), method: document.getElementById('fMethod').value, date: SYSTEM_TODAY }); state.modals.addFinance = false; saveData(); render(); };
+    window.saveContactInfo = (e) => { e.preventDefault(); state.contact = { phone: document.getElementById('cPhone').value, whatsapp: document.getElementById('cWa').value, email: document.getElementById('cEmail').value, address: document.getElementById('cAddress').value, instagram: document.getElementById('cInsta').value, facebook: document.getElementById('cFace').value }; alert("Bilgiler güncellendi!"); saveData(); render(); };
+    
+    window.saveUser = (e) => { e.preventDefault(); const perms = Array.from(document.querySelectorAll('.perm-checkbox:checked')).map(cb => cb.value); if(perms.length === 0) return alert("Yetki vermelisiniz."); USERS.push({ id: Date.now(), name: document.getElementById('newUName').value, email: document.getElementById('newUEmail').value, pass: document.getElementById('newUPass').value, role: "Personel", permissions: perms }); state.modals.addUser = false; saveData(); render(); };
+    window.updateProfile = (e) => { e.preventDefault(); const p = document.getElementById('myPass').value; if(p.length > 2) { state.currentUser.pass = p; alert("Şifre güncellendi!"); saveData(); } };
+
+    // HİZMET İŞLEMLERİ (YENİ)
+    window.openAddService = () => { state.editServiceId = null; state.tempServiceImg = ''; state.modals.addService = true; render(); };
+    window.openEditService = (id) => { state.editServiceId = id; const srv = SERVICES.find(s => s.id === id); state.tempServiceImg = srv.img || ''; state.modals.addService = true; render(); };
+    window.deleteService = (id) => { if(confirm("Hizmeti kalıcı olarak silmek istediğinize emin misiniz?")) { SERVICES = SERVICES.filter(s => s.id !== id); saveData(); render(); } };
+    window.handleServiceImage = (e) => { const file = e.target.files[0]; if (file) { const r = new FileReader(); r.onload = (ev) => { state.tempServiceImg = ev.target.result; document.getElementById('serviceImgPreview').src = ev.target.result; }; r.readAsDataURL(file); } };
+    window.saveService = (e) => {
+      e.preventDefault();
+      const imgData = state.tempServiceImg || 'https://images.unsplash.com/photo-1616394584738-fc6e612e71c9?w=600&q=80';
+      const newData = {
+          name: document.getElementById('sName').value, category: document.getElementById('sCat').value,
+          duration: parseInt(document.getElementById('sDur').value), priceMin: parseInt(document.getElementById('sMin').value),
+          priceMax: parseInt(document.getElementById('sMax').value), icon: "sparkles", img: imgData,
+          desc: document.getElementById('sDesc').value, longDesc: document.getElementById('sLongDesc').value
+      };
+      
+      if (state.editServiceId) {
+          const srv = SERVICES.find(s => s.id === state.editServiceId);
+          Object.assign(srv, newData);
+      } else {
+          SERVICES.push({ id: Date.now(), ...newData });
+      }
+      state.modals.addService = false; state.editServiceId = null; saveData(); render();
+    };
+
+    // UZMAN İŞLEMLERİ 
+    window.openAddStaff = () => { state.editStaffId = null; state.tempStaffImg = ''; state.modals.addStaff = true; render(); };
+    window.openEditStaff = (id) => { state.editStaffId = id; const stf = STAFF.find(s => s.id === id); state.tempStaffImg = stf.img || ''; state.modals.addStaff = true; render(); };
+    window.deleteStaff = (id) => { if(confirm('Uzmanı silmek istediğinize emin misiniz?')) { STAFF = STAFF.filter(s => s.id !== id); saveData(); render(); } };
+    window.handleStaffImage = (e) => { const file = e.target.files[0]; if (file) { const r = new FileReader(); r.onload = (ev) => { state.tempStaffImg = ev.target.result; document.getElementById('staffImgPreview').src = ev.target.result; }; r.readAsDataURL(file); } };
+    window.saveStaff = (e) => {
+      e.preventDefault();
+      const tags = Array.from(document.querySelectorAll('.service-checkbox:checked')).map(cb => parseInt(cb.value));
+      if(tags.length === 0) return alert("En az bir uzmanlık alanı seçin.");
+      const imgData = state.tempStaffImg || 'https://images.unsplash.com/photo-1595959183082-7b570b7e08e2?w=400&q=80';
+      if (state.editStaffId) {
+          const stf = STAFF.find(s => s.id === state.editStaffId);
+          stf.name = document.getElementById('newStaffName').value; stf.title = document.getElementById('newStaffTitle').value; 
+          stf.bio = document.getElementById('newStaffBio').value; stf.tags = tags; stf.img = imgData;
+      } else {
+          STAFF.push({ id: Date.now(), name: document.getElementById('newStaffName').value, title: document.getElementById('newStaffTitle').value, bio: document.getElementById('newStaffBio').value, tags, img: imgData });
+      }
+      state.modals.addStaff = false; state.editStaffId = null; saveData(); render();
+    };
+
+    // --- RENDER MİMARİSİ ---
+    function render() {
+      const app = document.getElementById('app');
+      app.innerHTML = state.mode === 'site' ? renderSite() + (state.showBooking ? renderBookingWizard() : '') : (state.currentUser ? renderAdminDashboard() + renderModals() : renderAdminLogin());
+      lucide.createIcons();
+    }
+
+    // --- SİTE ŞABLONLARI ---
+    function renderSite() {
+      return `
+        <header class="fixed top-0 inset-x-0 z-30 glass-panel border-b border-rose-100 shadow-sm">
+          <div class="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
+            <span class="text-3xl text-primary font-display cursor-pointer tracking-wide" onclick="setPage('home')">Belle<span class="italic text-rose-300">Rose</span></span>
+            <nav class="hidden md:flex items-center gap-8 text-sm text-stone-600 font-medium">
+              <a href="#hizmetler" class="hover:text-primary transition-colors">Hizmetlerimiz</a>
+              <a href="#uzmanlarimiz" class="hover:text-primary transition-colors">Uzmanlarımız</a>
+              <a href="#nasil-calisir" class="hover:text-primary transition-colors">Ne İşe Yarar?</a>
+              <a href="#iletisim" class="hover:text-primary transition-colors">İletişim</a>
+            </nav>
+            <button onclick="openBooking()" class="bg-primary hover-bg-primary text-white text-sm px-7 py-3 rounded-full transition-colors shadow-md font-medium">Randevu Al</button>
+          </div>
+        </header>
+
+        <section class="relative pt-40 pb-20 px-6 text-center">
+          <div class="max-w-4xl mx-auto relative z-10">
+            <span class="inline-flex items-center gap-2 text-primary text-xs tracking-[0.2em] uppercase mb-6 bg-rose-50 px-5 py-2 rounded-full border border-rose-100 font-medium shadow-sm"><i data-lucide="sparkles" class="w-4 h-4"></i> Güzelliğinize Zarafet Katın</span>
+            <h1 class="text-5xl md:text-7xl text-stone-800 leading-tight font-display mb-6">Aynadaki yansımanıza <br><span class="italic text-primary">aşık olacaksınız</span></h1>
+            <p class="mt-6 max-w-xl mx-auto text-stone-500 md:text-lg leading-relaxed">Kendinizi uzman ellere bırakın. Cilt bakımından, lazer epilasyona kadar size özel tasarlanmış premium güzellik deneyimini keşfedin.</p>
+            <button onclick="openBooking()" class="mt-10 inline-flex items-center gap-2 bg-primary hover-bg-primary text-white px-10 py-4 rounded-full transition-all shadow-xl font-medium transform hover:scale-105"><i data-lucide="calendar-heart" class="w-5 h-5"></i> Hemen Randevu Oluştur</button>
+          </div>
+        </section>
+
+        <!-- Hizmetlerimiz -->
+        <section id="hizmetler" class="px-6 py-20 bg-white/60 backdrop-blur-sm border-y border-rose-50">
+          <div class="max-w-7xl mx-auto">
+            <div class="mb-14 text-center">
+              <span class="text-xs tracking-[0.2em] uppercase text-primary font-medium">Size Özel Seçenekler</span>
+              <h2 class="mt-3 text-3xl md:text-5xl text-stone-800 font-display">Hizmetlerimiz</h2>
+              <div class="h-px w-16 bg-rose-300 mt-6 mx-auto opacity-50"></div>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+              ${SERVICES.map(s => `
+                <div class="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all border border-rose-50 cursor-pointer flex flex-col" onclick="openBooking()">
+                  <div class="h-56 overflow-hidden relative">
+                    <img src="${s.img || 'https://images.unsplash.com/photo-1616394584738-fc6e612e71c9?w=600&q=80'}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="${s.name}">
+                    <div class="absolute inset-0 bg-gradient-to-t from-stone-900/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-5"><p class="text-white text-sm font-medium">Randevu Al &rarr;</p></div>
+                  </div>
+                  <div class="p-6 flex-1 flex flex-col">
+                    <div class="flex items-center gap-2 text-primary text-xs uppercase tracking-wider font-semibold mb-3"><i data-lucide="${s.icon}" class="w-4 h-4"></i> ${s.category}</div>
+                    <h3 class="text-xl text-stone-800 font-display font-semibold mb-2">${s.name}</h3>
+                    <p class="text-sm text-stone-500 mb-4 flex-1">${s.desc}</p>
+                    <div class="flex items-center justify-between text-xs font-medium text-stone-400 pt-4 border-t border-rose-50">
+                      <span class="flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> ${s.duration} dk</span>
+                      <span class="text-primary">${s.priceMin}₺'den başlayan</span>
+                    </div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </section>
+
+        <!-- Uzmanlarımız -->
+        <section id="uzmanlarimiz" class="px-6 py-20 bg-[#fdf2f8]">
+          <div class="max-w-6xl mx-auto">
+            <div class="mb-14 text-center">
+              <span class="text-xs tracking-[0.2em] uppercase text-primary font-medium">Profesyonel Kadromuz</span>
+              <h2 class="mt-3 text-3xl md:text-5xl text-stone-800 font-display">Uzmanlarımız</h2>
+              <div class="h-px w-16 bg-rose-300 mt-6 mx-auto opacity-50"></div>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              ${STAFF.map(stf => `
+                <div class="bg-white rounded-[2rem] overflow-hidden shadow-sm hover:shadow-xl transition-all border border-rose-50 p-8 flex flex-col items-center text-center relative group">
+                  <div class="absolute top-0 inset-x-0 h-24 bg-gradient-to-b from-rose-50 to-transparent"></div>
+                  <div class="w-32 h-32 rounded-full overflow-hidden mb-5 border-4 border-rose-100 shadow-md relative z-10">
+                    <img src="${stf.img || 'https://images.unsplash.com/photo-1595959183082-7b570b7e08e2?w=400&q=80'}" class="w-full h-full object-cover">
+                  </div>
+                  <h3 class="text-2xl text-stone-800 font-display font-semibold mb-1 relative z-10">${stf.name}</h3>
+                  <p class="text-sm text-primary font-medium mb-4 relative z-10">${stf.title}</p>
+                  <p class="text-sm text-stone-500 leading-relaxed mb-6 flex-1 relative z-10">${stf.bio || 'Güzellik ve estetik alanında profesyonel hizmet sunar.'}</p>
+                  <div class="flex flex-wrap justify-center gap-2 mt-auto relative z-10">
+                    ${stf.tags.map(tagId => SERVICES.find(s => s.id === tagId)?.name).filter(Boolean).map(srv => `<span class="px-3 py-1 bg-rose-50 text-primary border border-rose-100 rounded-full text-[10px] uppercase font-semibold tracking-wider">${srv}</span>`).join('')}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </section>
+
+        <!-- Ne İşe Yarar? -->
+        <section id="nasil-calisir" class="px-6 py-24 bg-white/60 backdrop-blur-sm border-y border-rose-50">
+          <div class="max-w-4xl mx-auto">
+            <div class="mb-16 text-center">
+              <span class="text-xs tracking-[0.2em] uppercase text-primary font-medium">Bilgi Rehberi</span>
+              <h2 class="mt-3 text-3xl md:text-5xl text-stone-800 font-display">İşlemler Ne İşe Yarar?</h2>
+              <div class="h-px w-16 bg-rose-300 mt-6 mx-auto opacity-50"></div>
+            </div>
+            <div class="space-y-8">
+              ${SERVICES.map((s, index) => `
+                <div class="bg-white rounded-3xl p-8 shadow-sm border border-rose-50 flex gap-6 md:gap-8 flex-col md:flex-row items-start">
+                  <div class="w-16 h-16 rounded-full bg-rose-50 text-primary flex items-center justify-center shrink-0 text-xl font-display font-bold">0${index+1}</div>
+                  <div>
+                    <h3 class="text-2xl text-stone-800 font-display font-semibold mb-3">${s.name}</h3>
+                    <p class="text-stone-600 leading-relaxed text-sm md:text-base">${s.longDesc || s.desc}</p>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </section>
+
+        <!-- Galeri -->
+        <section class="px-6 py-20 bg-[#fdf2f8]">
+          <div class="max-w-6xl mx-auto">
+            <div class="mb-14 text-center">
+              <span class="text-xs tracking-[0.2em] uppercase text-primary font-medium">Atmosferimiz</span>
+              <h2 class="mt-3 text-3xl md:text-4xl text-stone-800 font-display">Salonumuzdan Kareler</h2>
+              <div class="h-px w-16 bg-rose-300 mt-6 mx-auto opacity-50"></div>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              ${state.gallery.map(url => `<div class="aspect-[4/5] rounded-3xl overflow-hidden shadow-sm"><img src="${url}" class="w-full h-full object-cover hover:scale-110 transition-transform duration-700" alt="Galeri"></div>`).join('')}
+            </div>
+          </div>
+        </section>
+
+        <!-- Yorumlar -->
+        <section class="py-20 overflow-hidden relative bg-white/60 backdrop-blur-sm border-t border-rose-50">
+          <div class="mb-10 text-center px-6">
+            <h2 class="text-3xl text-stone-800 font-display">Mutlu Kadınlar Kulübü</h2>
+            <div class="h-px w-16 bg-rose-300 mt-6 mx-auto opacity-50"></div>
+          </div>
+          <div class="marquee-container py-4">
+            <div class="marquee-content flex gap-6 px-3">
+              ${[...MOCK_REVIEWS, ...MOCK_REVIEWS].map(r => `
+                <div class="w-80 shrink-0 bg-white border border-rose-50 rounded-[2rem] p-8 shadow-sm">
+                  <div class="flex items-center gap-1 text-rose-300 mb-4">${'<i data-lucide="star" class="w-4 h-4 fill-current"></i>'.repeat(5)}</div>
+                  <p class="text-sm text-stone-600 italic leading-relaxed">"${r.text}"</p>
+                  <p class="text-xs text-primary mt-5 font-medium uppercase tracking-widest">— ${r.name}</p>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </section>
+
+        <!-- İletişim -->
+        <section id="iletisim" class="px-6 py-12 bg-stone-900 text-stone-400">
+          <div class="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 items-center">
+            <div>
+              <span class="text-2xl text-white font-display font-semibold tracking-wide block mb-3">Belle<span class="text-rose-400 italic">Rose</span></span>
+              <p class="text-xs leading-relaxed max-w-sm mb-5">Zarafetiniz, bizim uzmanlığımız. Sizi salonumuzda ağırlamaktan mutluluk duyarız.</p>
+              <div class="space-y-3 text-sm flex flex-col sm:flex-row sm:gap-6 sm:space-y-0">
+                <p class="flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-rose-900/30 flex items-center justify-center"><i data-lucide="phone" class="w-3.5 h-3.5 text-rose-400"></i></div> ${state.contact.phone}</p>
+                <p class="flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-rose-900/30 flex items-center justify-center"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-400"></i></div> ${state.contact.address}</p>
+              </div>
+            </div>
+            <div class="md:text-right flex flex-col md:items-end mt-6 md:mt-0">
+              <h3 class="text-white font-display text-lg mb-3">Bizi Takip Edin</h3>
+              <div class="flex items-center gap-4">
+                <a href="#" class="flex items-center gap-2 hover:text-rose-400 transition-colors"><i data-lucide="instagram" class="w-5 h-5"></i> ${state.contact.instagram}</a>
+                <a href="#" class="flex items-center gap-2 hover:text-rose-400 transition-colors"><i data-lucide="facebook" class="w-5 h-5"></i> ${state.contact.facebook}</a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- WhatsApp Floating Button -->
+        <a href="https://wa.me/${formatPhoneForWA(state.contact.whatsapp)}" target="_blank" class="fixed bottom-6 right-6 z-40 bg-green-500 hover:bg-green-600 text-white rounded-full px-6 py-4 flex items-center gap-3 shadow-lg shadow-green-500/30 transition-transform hover:scale-105 font-medium">
+          <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+          WhatsApp İletişime Geç
+        </a>
+      `;
+    }
+
+    function renderBookingWizard() {
+      let b = '', canNext = false, s = state.bookingStep, d = state.bookingData;
+      if (s === 4) return `<div class="fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-10 max-w-md w-full text-center shadow-2xl"><div class="w-20 h-20 rounded-full bg-rose-50 text-primary flex items-center justify-center mx-auto mb-6"><i data-lucide="heart-handshake" class="w-10 h-10"></i></div><h3 class="text-3xl text-stone-800 font-display mb-3">Randevunuz Alındı</h3><p class="text-stone-500 text-sm leading-relaxed">Sayın ${d.name},<br><strong class="text-stone-800">${d.service.name}</strong> işleminiz için <strong>${formatDate(d.date)} ${d.time}</strong>'da sizi bekliyoruz.</p><button onclick="closeBooking()" class="mt-8 bg-primary hover-bg-primary text-white px-8 py-3.5 rounded-full w-full transition-colors font-medium">Harika, Teşekkürler!</button></div></div>`;
+      
+      if (s === 0) { 
+        canNext = d.service !== null; 
+        b = `<div class="grid sm:grid-cols-2 gap-4">${SERVICES.map(srv => `<button onclick="setBookingService(${srv.id})" class="text-left border rounded-3xl p-5 transition-all ${d.service?.id === srv.id ? 'border-primary bg-rose-50 ring-1 ring-rose-200' : 'border-stone-100 hover:border-rose-200'}"><div class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-primary shadow-sm mb-3"><i data-lucide="${srv.icon}" class="w-5 h-5"></i></div><p class="text-stone-800 text-lg font-display font-semibold">${srv.name}</p></button>`).join('')}</div>`; 
+      }
+      else if (s === 1) { 
+        canNext = d.staff !== null; 
+        const av = d.service ? STAFF.filter(stf => stf.tags.includes(d.service.id)) : STAFF; 
+        b = av.length === 0 ? `<p class="text-stone-400 text-center py-10">Uygun uzman bulunmuyor.</p>` : `<div class="grid sm:grid-cols-2 gap-4">${av.map(stf => `<button onclick="setBookingStaff(${stf.id})" class="text-left border rounded-3xl p-5 flex items-center gap-4 transition-all ${d.staff?.id === stf.id ? 'border-primary bg-rose-50 ring-1 ring-rose-200' : 'border-stone-100 hover:border-rose-200'}"><div class="w-14 h-14 rounded-full bg-white flex items-center justify-center text-rose-300 shadow-sm overflow-hidden border border-rose-50"><img src="${stf.img}" class="w-full h-full object-cover"></div><div><p class="text-stone-800 text-lg font-display font-semibold">${stf.name}</p><p class="text-xs text-stone-500 mt-1">${stf.title}</p></div></button>`).join('')}</div>`; 
+      }
+      else if (s === 2) { 
+        canNext = d.time !== null;
+        const limit = state.densities[d.service.id] || 1; 
+        const times = ["09:00","10:30","12:00","14:00","15:30","17:00"];
+        const availableTimes = times.filter(t => {
+            const booked = APPOINTMENTS.filter(a => a.date === SYSTEM_TODAY && a.time === t && a.service === d.service.name && !a.status.includes('İptal')).length;
+            return booked < limit;
+        });
+
+        b = `<div><p class="text-xs uppercase tracking-widest text-stone-400 mb-4 font-semibold text-center">${formatDate(SYSTEM_TODAY)} - Müsait Saatler</p><div class="grid grid-cols-3 gap-3">
+          ${availableTimes.length === 0 ? `<div class="col-span-3 text-center text-rose-500 text-sm py-4">Bu hizmet için bugüne ait tüm randevular doludur.</div>` : availableTimes.map(t => `<button onclick="setBookingTime('${t}')" class="py-3.5 rounded-2xl text-sm border transition-all font-medium ${d.time === t ? 'bg-primary border-primary text-white shadow-md' : 'border-stone-200 text-stone-600 hover:border-rose-300'}">${t}</button>`).join('')}
+        </div></div>`; 
+      }
+      else if (s === 3) { 
+        canNext = d.name.length > 2 && d.phone.length > 9; 
+        b = `<div class="space-y-5"><div class="bg-rose-50 rounded-3xl p-6 border border-rose-100"><p class="font-display text-xl text-stone-800 mb-2">${d.service.name}</p><p class="text-sm text-stone-500 flex items-center gap-2"><i data-lucide="user" class="w-4 h-4 text-primary"></i> ${d.staff.name}</p><p class="text-sm text-stone-500 flex items-center gap-2 mt-1"><i data-lucide="clock" class="w-4 h-4 text-primary"></i> ${formatDate(SYSTEM_TODAY)} ${d.time}</p></div><div><label class="text-xs font-semibold uppercase tracking-wider text-stone-500 mb-2 block ml-1">Adınız Soyadınız</label><input type="text" oninput="handleInput('name', this)" value="${d.name}" class="w-full border border-stone-200 rounded-2xl px-5 py-4 focus:outline-none focus:ring-1 focus:ring-primary bg-stone-50/50"></div><div><label class="text-xs font-semibold uppercase tracking-wider text-stone-500 mb-2 block ml-1">Telefon Numaranız</label><input type="tel" oninput="handleInput('phone', this)" value="${d.phone}" class="w-full border border-stone-200 rounded-2xl px-5 py-4 focus:outline-none focus:ring-1 focus:ring-primary bg-stone-50/50"></div></div>`; 
+      }
+      return `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4 py-8"><div class="bg-white rounded-[2rem] w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"><div class="p-6 border-b border-stone-100 flex items-center justify-between"><h3 class="text-2xl text-stone-800 font-display font-semibold">Randevu Oluştur</h3><button onclick="closeBooking()" class="text-stone-400 hover:text-primary transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button></div><div class="flex px-8 pt-8 gap-3">${["Hizmet", "Uzman", "Zaman", "Bilgiler"].map((l, i) => `<div class="flex-1"><div class="h-1.5 rounded-full ${i <= s ? 'bg-primary' : 'bg-stone-100'}"></div><p class="text-[10px] mt-2 font-medium uppercase tracking-widest ${i === s ? 'text-primary' : 'text-stone-400'}">${l}</p></div>`).join('')}</div><div class="p-8 overflow-y-auto flex-1">${b}</div><div class="p-6 border-t border-stone-100 flex justify-between bg-stone-50/50"><button onclick="prevBookingStep()" class="px-6 py-3 rounded-full text-stone-500 font-medium ${s === 0 ? 'invisible' : 'hover:bg-white border border-stone-200'}">Geri Dön</button><button id="confirm-btn" onclick="nextBookingStep()" ${!canNext ? 'disabled' : ''} class="bg-primary hover-bg-primary disabled:opacity-40 text-white px-10 py-3 rounded-full transition-colors font-medium shadow-md">${s === 3 ? 'Onayla' : 'Devam Et'}</button></div></div></div>`;
+    }
+
+    // --- ADMİN PANELİ ---
+    function renderAdminLogin() {
+      return `<div class="min-h-screen bg-stone-900 flex items-center justify-center px-6 relative z-10"><div class="bg-white rounded-[2rem] p-10 max-w-sm w-full shadow-2xl"><div class="w-16 h-16 rounded-full bg-rose-50 text-primary flex items-center justify-center mb-6"><i data-lucide="lock-keyhole" class="w-7 h-7"></i></div><h2 class="text-3xl text-stone-800 font-display font-semibold mb-1">Yönetim Paneli</h2><p class="text-sm text-stone-400 mb-8">Kurumsal Giriş</p><form onsubmit="loginAdmin(event)" class="space-y-5"><div><label class="text-xs font-semibold uppercase tracking-wider text-stone-500 block mb-2">E-posta</label><input id="adminEmail" type="email" required class="w-full border border-stone-200 rounded-2xl px-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-primary" value="admin@bellerose.com"></div><div><label class="text-xs font-semibold uppercase tracking-wider text-stone-500 block mb-2">Şifre</label><input id="adminPass" type="password" required class="w-full border border-stone-200 rounded-2xl px-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-primary" value="bellerose2026"></div><button type="submit" class="w-full bg-primary hover-bg-primary text-white py-3.5 rounded-2xl font-medium transition-colors shadow-md mt-2">Giriş Yap</button></form></div></div>`;
+    }
+
+    function renderAdminDashboard() {
+      const activeTabsData = ADMIN_PAGES.filter(t => state.currentUser.permissions.includes(t.id));
+      let content = '';
+
+      if (state.adminTab === 'overview') {
+        const todayApts = APPOINTMENTS.filter(a => a.date === SYSTEM_TODAY && !a.status.includes('İptal'));
+        const income = TRANSACTIONS.filter(t => t.date === SYSTEM_TODAY && t.type === 'income').reduce((s, t) => s + t.amount, 0);
+        const expense = TRANSACTIONS.filter(t => t.date === SYSTEM_TODAY && t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+        
+        // Gelişmiş CRM Analizi
+        const crmMap = {};
+        APPOINTMENTS.filter(a => !a.status.includes('İptal')).forEach(a => {
+            if(!crmMap[a.phone]) crmMap[a.phone] = { name: a.customer, phone: a.phone, count: 0, revenue: 0, lastVisit: a.date, services: {} };
+            crmMap[a.phone].count++;
+            if (a.date > crmMap[a.phone].lastVisit) crmMap[a.phone].lastVisit = a.date;
+            const srv = SERVICES.find(s => s.name === a.service);
+            if(srv) crmMap[a.phone].revenue += srv.priceMin;
+            crmMap[a.phone].services[a.service] = (crmMap[a.phone].services[a.service] || 0) + 1;
+        });
+        
+        Object.values(crmMap).forEach(c => {
+            c.favorite = Object.keys(c.services).reduce((a, b) => c.services[a] > c.services[b] ? a : b);
+        });
+        const topClients = Object.values(crmMap).sort((a,b) => b.revenue - a.revenue).slice(0, 8);
+
+        content = `
+          <h2 class="text-3xl text-stone-800 font-display font-semibold mb-8">Genel Bakış & CRM ✨</h2>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-3xl p-6 border border-rose-50 shadow-sm"><div class="flex justify-between items-start mb-4"><div class="w-12 h-12 rounded-full bg-rose-50 text-primary flex items-center justify-center"><i data-lucide="calendar" class="w-6 h-6"></i></div><div class="mini-chart">${generateBars()}</div></div><p class="text-xs text-stone-400 font-medium uppercase tracking-wider">Bugün Randevu</p><p class="text-3xl font-bold text-stone-800 mt-1">${todayApts.length}</p></div>
+            <div class="bg-white rounded-3xl p-6 border border-rose-50 shadow-sm"><div class="flex justify-between items-start mb-4"><div class="w-12 h-12 rounded-full bg-green-50 text-green-500 flex items-center justify-center"><i data-lucide="trending-up" class="w-6 h-6"></i></div><div class="mini-chart">${generateBars()}</div></div><p class="text-xs text-stone-400 font-medium uppercase tracking-wider">Bugünün Cirosu</p><p class="text-3xl font-bold text-stone-800 mt-1">${income} ₺</p></div>
+            <div class="bg-white rounded-3xl p-6 border border-rose-50 shadow-sm"><div class="flex justify-between items-start mb-4"><div class="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center"><i data-lucide="trending-down" class="w-6 h-6"></i></div><div class="mini-chart">${generateBars()}</div></div><p class="text-xs text-stone-400 font-medium uppercase tracking-wider">Toplam Gider</p><p class="text-3xl font-bold text-stone-800 mt-1">${expense} ₺</p></div>
+            <div class="bg-white rounded-3xl p-6 border border-rose-50 shadow-sm"><div class="flex justify-between items-start mb-4"><div class="w-12 h-12 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center"><i data-lucide="award" class="w-6 h-6"></i></div><div class="mini-chart">${generateBars()}</div></div><p class="text-xs text-stone-400 font-medium uppercase tracking-wider">Net Kâr</p><p class="text-3xl font-bold text-stone-800 mt-1">${income - expense} ₺</p></div>
+          </div>
+          
+          <div class="bg-white rounded-3xl border border-rose-50 p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-display font-semibold text-stone-800 flex items-center gap-2"><i data-lucide="users" class="w-6 h-6 text-primary"></i> VIP Müşteriler (CRM)</h3>
+                <span class="text-xs text-stone-400 uppercase tracking-widest font-semibold">Ciroya Göre Sıralı</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm text-left">
+                <thead class="bg-stone-50 text-stone-500 text-[10px] uppercase font-bold tracking-widest">
+                  <tr><th class="px-5 py-4 rounded-l-xl">Müşteri</th><th class="px-5 py-4">Toplam Randevu</th><th class="px-5 py-4">Favori İşlem</th><th class="px-5 py-4">Son Ziyaret</th><th class="px-5 py-4 text-right rounded-r-xl">Tahmini LTV (Ciro Katkısı)</th></tr>
+                </thead>
+                <tbody class="divide-y divide-stone-50">
+                  ${topClients.length === 0 ? `<tr><td colspan="5" class="py-10 text-center text-stone-400">Henüz müşteri verisi oluşmadı.</td></tr>` : topClients.map(c => `
+                    <tr class="hover:bg-rose-50/40 transition-colors">
+                      <td class="px-5 py-4"><p class="font-semibold text-stone-800 text-base">${c.name}</p><p class="text-xs text-stone-400 mt-0.5">${c.phone}</p></td>
+                      <td class="px-5 py-4"><span class="bg-rose-100 text-primary px-3 py-1 rounded-full text-xs font-bold">${c.count} Kez</span></td>
+                      <td class="px-5 py-4 text-stone-600">${c.favorite}</td>
+                      <td class="px-5 py-4 text-stone-500 text-xs">${formatDate(c.lastVisit)}</td>
+                      <td class="px-5 py-4 text-right font-bold text-stone-800 text-lg">${c.revenue} ₺</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }
+      else if (state.adminTab === 'startDay') {
+        const todayApts = APPOINTMENTS.filter(a => a.date === SYSTEM_TODAY && !a.status.includes('Tamamlandı') && !a.status.includes('İptal') && !a.status.includes('Ödendi')).sort((a,b) => a.time.localeCompare(b.time));
+        content = `
+          <h2 class="text-3xl text-stone-800 font-display font-semibold mb-8">Güne Başla - Günlük Plan</h2>
+          <div class="grid gap-4">
+            ${todayApts.length === 0 ? `<div class="bg-white p-10 rounded-3xl text-center border border-rose-50 shadow-sm"><i data-lucide="check-circle-2" class="w-12 h-12 text-green-400 mx-auto mb-4"></i><p class="text-stone-500 font-medium">Bugün için bekleyen işleminiz kalmadı, harika iş çıkardınız!</p></div>` : todayApts.map(a => `
+              <div class="bg-white border-l-4 border-primary rounded-2xl p-6 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
+                <div class="flex gap-6 items-center">
+                  <div class="text-center bg-rose-50 px-4 py-3 rounded-xl"><p class="text-xs text-stone-500 uppercase font-semibold mb-1">Saat</p><p class="text-xl font-bold text-primary">${a.time}</p></div>
+                  <div><p class="text-lg font-semibold text-stone-800">${a.customer} <span class="text-sm font-normal text-stone-400 ml-2">${a.phone}</span></p><p class="text-stone-600 mt-1">${a.service} <span class="text-xs text-stone-400 mx-2">|</span> <i data-lucide="user" class="inline w-3 h-3 text-stone-400"></i> ${a.staff}</p></div>
+                </div>
+                <div><button onclick="state.activeId=${a.id}; state.modals.payment=true; render()" class="bg-primary hover-bg-primary text-white px-6 py-3 rounded-xl font-medium shadow-sm transition-colors flex gap-2 items-center"><i data-lucide="check-circle" class="w-5 h-5"></i> İşlemi Tamamla & Ödeme Al</button></div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+      else if (state.adminTab === 'appointments') {
+        let filteredApts = APPOINTMENTS.filter(a => a.staff.includes(state.filters.aptStaff) && a.service.includes(state.filters.aptService) && a.customer.toLowerCase().includes(state.filters.aptName.toLowerCase()));
+        
+        if (state.filters.aptStatus && state.filters.aptStatus !== 'all') {
+            filteredApts = filteredApts.filter(a => {
+                if (state.filters.aptStatus === 'Tamamlandı') return a.status.includes('Tamamlandı') || a.status.includes('Ödendi');
+                if (state.filters.aptStatus === 'İptal Edildi') return a.status.includes('İptal');
+                if (state.filters.aptStatus === 'Zamanı Değiştirildi') return a.status.includes('Ertelendi') || a.status.includes('Değiştirildi');
+                return a.status === state.filters.aptStatus;
+            });
+        }
+
+        const sortType = state.filters.aptSort || 'asc';
+        filteredApts.sort((a, b) => {
+            const da = new Date(`${a.date}T${a.time}`);
+            const db = new Date(`${b.date}T${b.time}`);
+            return sortType === 'asc' ? da - db : db - da;
+        });
+
+        const unconfirmedCount = APPOINTMENTS.filter(a => a.status === 'Bekliyor' && !a.isConfirmed).length;
+
+        content = `
+          <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
+            <h2 class="text-3xl text-stone-800 font-display font-semibold">Tüm Randevular</h2>
+            <div class="flex flex-wrap gap-3">
+              <button onclick="state.modals.clearHistory=true; render()" class="bg-red-50 text-red-600 px-4 py-2.5 rounded-xl text-sm flex items-center gap-2 font-medium border border-red-100"><i data-lucide="trash-2" class="w-4 h-4"></i> Geçmişi Sil</button>
+              <button onclick="state.modals.waConfirm=true; render()" class="bg-emerald-50 text-emerald-600 px-4 py-2.5 rounded-xl text-sm flex items-center gap-2 font-medium border border-emerald-100"><i data-lucide="message-circle" class="w-4 h-4"></i> Teyit Ekranı ${unconfirmedCount>0 ? `<span class="bg-emerald-500 text-white px-2 py-0.5 rounded-full text-[10px]">${unconfirmedCount}</span>` : ''}</button>
+              <button onclick="state.modals.density=true; render()" class="bg-stone-800 text-white px-4 py-2.5 rounded-xl text-sm flex items-center gap-2 font-medium"><i data-lucide="sliders" class="w-4 h-4"></i> Yoğunluk</button>
+            </div>
+          </div>
+          
+          <div class="flex flex-wrap gap-4 mb-6 bg-white p-5 rounded-3xl border border-rose-50 shadow-sm">
+            <div class="flex-1 min-w-[200px] relative"><i data-lucide="search" class="absolute left-4 top-3.5 w-4 h-4 text-stone-400"></i><input type="text" placeholder="Müşteri adıyla ara..." oninput="updateFilter('aptName', this.value)" class="w-full border border-stone-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary bg-stone-50"></div>
+            <select onchange="updateFilter('aptStatus', this.value)" class="border border-stone-200 rounded-xl px-4 py-2.5 text-sm bg-stone-50 focus:outline-none"><option value="all">Tüm Durumlar</option><option value="Bekliyor" ${state.filters.aptStatus==='Bekliyor'?'selected':''}>Bekleyenler</option><option value="Onaylı" ${state.filters.aptStatus==='Onaylı'?'selected':''}>Onaylılar</option><option value="Tamamlandı" ${state.filters.aptStatus==='Tamamlandı'?'selected':''}>Tamamlananlar</option><option value="İptal Edildi" ${state.filters.aptStatus==='İptal Edildi'?'selected':''}>İptal Edilenler</option><option value="Zamanı Değiştirildi" ${state.filters.aptStatus==='Zamanı Değiştirildi'?'selected':''}>Ertelenenler</option></select>
+            <select onchange="updateFilter('aptSort', this.value)" class="border border-stone-200 rounded-xl px-4 py-2.5 text-sm bg-stone-50 focus:outline-none"><option value="asc" ${state.filters.aptSort==='asc'?'selected':''}>Önce Yaklaşanlar</option><option value="desc" ${state.filters.aptSort==='desc'?'selected':''}>Önce En Uzak</option></select>
+            <select onchange="updateFilter('aptStaff', this.value)" class="border border-stone-200 rounded-xl px-4 py-2.5 text-sm bg-stone-50 focus:outline-none"><option value="">Tüm Uzmanlar</option>${STAFF.map(s => `<option value="${s.name}" ${state.filters.aptStaff===s.name?'selected':''}>${s.name}</option>`).join('')}</select>
+            <select onchange="updateFilter('aptService', this.value)" class="border border-stone-200 rounded-xl px-4 py-2.5 text-sm bg-stone-50 focus:outline-none"><option value="">Tüm İşlemler</option>${SERVICES.map(s => `<option value="${s.name}" ${state.filters.aptService===s.name?'selected':''}>${s.name}</option>`).join('')}</select>
+          </div>
+          <div class="bg-white rounded-3xl border border-rose-50 shadow-sm overflow-hidden">
+            <table class="w-full text-sm text-left"><thead class="bg-stone-50 text-stone-500 text-xs uppercase font-semibold border-b border-stone-100"><tr><th class="px-6 py-5">Zaman</th><th class="px-6 py-5">Müşteri</th><th class="px-6 py-5">Hizmet Detayı</th><th class="px-6 py-5">Durum & Teyit</th><th class="px-6 py-5 text-right">İşlemler</th></tr></thead><tbody class="divide-y divide-stone-50">
+                ${filteredApts.length === 0 ? `<tr><td colspan="5" class="px-6 py-10 text-center text-stone-400">Aramanıza uygun randevu bulunamadı.</td></tr>` : filteredApts.map(a => `
+                  <tr class="hover:bg-rose-50/30 transition-colors">
+                    <td class="px-6 py-4 text-stone-600 font-medium">${formatDate(a.date)}<br><span class="text-xs text-primary font-semibold">${a.time}</span></td>
+                    <td class="px-6 py-4"><p class="font-semibold text-stone-800">${a.customer}</p><p class="text-xs text-stone-500 mt-1">${a.phone}</p></td>
+                    <td class="px-6 py-4"><p class="text-stone-800">${a.service}</p><p class="text-[11px] text-stone-400 uppercase tracking-wide mt-1"><i data-lucide="user" class="inline w-3 h-3"></i> ${a.staff}</p></td>
+                    <td class="px-6 py-4">
+                      <span class="px-3 py-1.5 rounded-full text-[10px] uppercase font-bold tracking-wider ${a.status.includes('Ödendi')||a.status.includes('Tamamlandı')?'bg-stone-100 text-stone-500':a.status==='Onaylı'?'bg-green-100 text-green-700':a.status.includes('İptal')?'bg-red-100 text-red-700':'bg-rose-100 text-primary'}">${a.status}</span>
+                      ${(!a.status.includes('Tamamlandı') && !a.status.includes('İptal') && !a.status.includes('Ödendi')) ? 
+                         (a.isConfirmed ? `<div class="mt-2 text-[10px] font-bold text-emerald-600 flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> Teyit Edildi</div>` : `<div class="mt-2 text-[10px] font-bold text-orange-500 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> Teyit Bekliyor</div>`) : ''}
+                    </td>
+                    <td class="px-6 py-4 text-right flex gap-1.5 justify-end">
+                      ${(!a.status.includes('Ödendi') && !a.status.includes('Tamamlandı') && !a.status.includes('İptal')) ? `
+                        <button onclick="state.activeId=${a.id}; state.modals.payment=true; render()" class="text-[11px] font-semibold text-white bg-green-500 px-3 py-1.5 rounded-lg shadow-sm" title="Ödeme Al"><i data-lucide="banknote" class="w-4 h-4"></i></button>
+                        <button onclick="state.activeId=${a.id}; state.modals.postpone=true; render()" class="text-[11px] font-semibold text-stone-700 bg-stone-100 border border-stone-200 px-3 py-1.5 rounded-lg" title="Zaman Değiştir"><i data-lucide="clock" class="w-4 h-4"></i></button>
+                        <button onclick="cancelAppointment(${a.id})" class="text-[11px] font-semibold text-orange-600 bg-orange-50 px-3 py-1.5 rounded-lg hover:bg-orange-100" title="İptal Et"><i data-lucide="x-circle" class="w-4 h-4"></i></button>
+                      ` : ''}
+                      <button onclick="deleteAppointment(${a.id})" class="text-[11px] font-semibold text-red-600 bg-red-50 px-3 py-1.5 rounded-lg hover:bg-red-100" title="Kalıcı Sil"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </td>
+                  </tr>
+                `).join('')}
+            </tbody></table>
+          </div>
+        `;
+      }
+      else if (state.adminTab === 'finance') {
+        let filteredTrans = TRANSACTIONS;
+        if(state.filters.financeType !== 'all') filteredTrans = filteredTrans.filter(t => t.type === state.filters.financeType);
+        if(state.filters.financeDate !== 'all') {
+           filteredTrans = filteredTrans.filter(t => {
+               const daysDiff = getDateDiffDays(SYSTEM_TODAY, t.date);
+               if(state.filters.financeDate === '1d') return daysDiff <= 0;
+               if(state.filters.financeDate === '3d') return daysDiff <= 3;
+               if(state.filters.financeDate === '1w') return daysDiff <= 7;
+               if(state.filters.financeDate === '1m') return daysDiff <= 30;
+               return true;
+           });
+        }
+
+        const totalInc = filteredTrans.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+        const totalExp = filteredTrans.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+        const netAmt = totalInc - totalExp;
+
+        content = `
+          <div class="flex items-center justify-between mb-8"><h2 class="text-3xl text-stone-800 font-display font-semibold">Kasa & Gider Yönetimi</h2><button onclick="state.modals.addFinance=true; render()" class="bg-primary text-white px-6 py-3 rounded-2xl text-sm flex items-center gap-2 font-medium shadow-md"><i data-lucide="plus" class="w-4 h-4"></i> İşlem Ekle</button></div>
+          <div class="flex flex-wrap gap-4 mb-6 bg-white p-4 rounded-2xl border border-rose-50 shadow-sm">
+            <select onchange="updateFilter('financeType', this.value)" class="border border-stone-200 rounded-xl px-4 py-2 text-sm bg-stone-50 focus:outline-none"><option value="all">Tüm İşlemler</option><option value="income">Gelirler</option><option value="expense">Giderler</option></select>
+            <select onchange="updateFilter('financeDate', this.value)" class="border border-stone-200 rounded-xl px-4 py-2 text-sm bg-stone-50 focus:outline-none"><option value="all" ${state.filters.financeDate==='all'?'selected':''}>Tüm Zamanlar</option><option value="1d" ${state.filters.financeDate==='1d'?'selected':''}>Son 1 Gün (Bugün)</option><option value="3d" ${state.filters.financeDate==='3d'?'selected':''}>Son 3 Gün</option><option value="1w" ${state.filters.financeDate==='1w'?'selected':''}>Son 1 Hafta</option><option value="1m" ${state.filters.financeDate==='1m'?'selected':''}>Son 1 Ay</option></select>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-green-50 p-6 rounded-3xl border border-green-100 shadow-sm"><p class="text-xs uppercase font-bold text-green-600 tracking-wider">Filtrelenen Gelir</p><p class="text-3xl font-bold text-green-700 mt-2">${totalInc} ₺</p></div>
+            <div class="bg-red-50 p-6 rounded-3xl border border-red-100 shadow-sm"><p class="text-xs uppercase font-bold text-red-600 tracking-wider">Filtrelenen Gider</p><p class="text-3xl font-bold text-red-700 mt-2">${totalExp} ₺</p></div>
+            <div class="bg-blue-50 p-6 rounded-3xl border border-blue-100 shadow-sm"><p class="text-xs uppercase font-bold text-blue-600 tracking-wider">Net Bakiye</p><p class="text-3xl font-bold text-blue-700 mt-2">${netAmt} ₺</p></div>
+          </div>
+          <div class="bg-white rounded-3xl border border-rose-50 shadow-sm overflow-hidden">
+            <table class="w-full text-sm text-left"><thead class="bg-stone-50 text-stone-500 text-xs uppercase font-semibold border-b border-stone-100"><tr><th class="px-6 py-5">Tarih</th><th class="px-6 py-5">Açıklama</th><th class="px-6 py-5">Yöntem</th><th class="px-6 py-5 text-right">Tutar</th></tr></thead><tbody class="divide-y divide-stone-50">
+                ${filteredTrans.map(t => `<tr class="hover:bg-rose-50/30 transition-colors"><td class="px-6 py-4 text-stone-500">${formatDate(t.date)}</td><td class="px-6 py-4 font-medium text-stone-800">${t.desc}</td><td class="px-6 py-4 text-stone-400 text-xs uppercase tracking-wider">${t.method}</td><td class="px-6 py-4 text-right font-bold text-lg ${t.type==='income'?'text-green-600':'text-red-500'}">${t.type==='income'?'+':'-'} ${t.amount} ₺</td></tr>`).join('')}
+            </tbody></table>
+          </div>
+        `;
+      }
+      else if (state.adminTab === 'inventory') {
+        content = `
+          <div class="flex items-center justify-between mb-8"><h2 class="text-3xl text-stone-800 font-display font-semibold">Stok Yönetimi</h2><button onclick="state.modals.addStock=true; render()" class="bg-primary text-white px-6 py-3 rounded-2xl text-sm flex items-center gap-2 font-medium shadow-md"><i data-lucide="plus" class="w-4 h-4"></i> Stok Alımı Ekle</button></div>
+          <div class="bg-white rounded-3xl border border-rose-50 shadow-sm overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-stone-50 text-stone-500 text-xs uppercase font-semibold border-b border-stone-100"><tr><th class="px-6 py-5">Ürün Adı</th><th class="px-6 py-5">Birim Maliyet</th><th class="px-6 py-5">Mevcut Stok</th><th class="px-6 py-5">Durum</th></tr></thead><tbody class="divide-y divide-stone-50">
+              ${INVENTORY.map(i => `<tr class="hover:bg-rose-50/30 transition-colors"><td class="px-6 py-4 font-semibold text-stone-800">${i.name}</td><td class="px-6 py-4 text-stone-500">${i.cost} ₺ / ${i.unit}</td><td class="px-6 py-4 text-stone-800 font-bold text-lg">${i.stock} <span class="text-xs font-normal text-stone-400 uppercase tracking-widest">${i.unit}</span></td><td class="px-6 py-4"><span class="px-3 py-1.5 rounded-full text-[10px] uppercase font-bold tracking-wider ${i.stock <= i.minAlert ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">${i.stock <= i.minAlert ? 'Kritik Seviye' : 'Yeterli'}</span></td></tr>`).join('')}
+          </tbody></table></div>
+        `;
+      }
+      else if (state.adminTab === 'services') {
+        content = `
+          <div class="flex items-center justify-between mb-8"><h2 class="text-3xl text-stone-800 font-display font-semibold">Hizmetler</h2><button onclick="openAddService()" class="bg-primary text-white px-6 py-3 rounded-2xl text-sm flex items-center gap-2 font-medium shadow-md"><i data-lucide="plus" class="w-4 h-4"></i> Hizmet Ekle</button></div>
+          <div class="grid md:grid-cols-2 gap-4">${SERVICES.map(s => `
+            <div class="bg-white border border-rose-50 rounded-2xl p-6 shadow-sm flex items-start justify-between hover:border-rose-200 transition-colors">
+              <div class="flex items-start gap-5">
+                <div class="w-16 h-16 rounded-xl overflow-hidden shadow-sm shrink-0 border border-stone-100">
+                  <img src="${s.img}" class="w-full h-full object-cover">
+                </div>
+                <div>
+                  <p class="text-stone-800 font-display text-xl font-semibold">${s.name}</p>
+                  <p class="text-sm text-stone-500 mt-1">${s.category} · ${s.duration} dk</p>
+                  <p class="text-xs text-primary font-bold mt-2">${s.priceMin} - ${s.priceMax} ₺</p>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="openEditService(${s.id})" class="text-blue-500 hover:text-blue-700 bg-blue-50 p-2 rounded-xl transition-colors"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                <button onclick="deleteService(${s.id})" class="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded-xl transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+              </div>
+            </div>
+          `).join('')}</div>
+        `;
+      }
+      else if (state.adminTab === 'staff') {
+        content = `
+          <div class="flex items-center justify-between mb-8">
+            <h2 class="text-3xl text-stone-800 font-display font-semibold">Uzman Kadrosu</h2>
+            <button onclick="openAddStaff()" class="bg-primary text-white px-6 py-3 rounded-2xl text-sm flex items-center gap-2 font-medium shadow-md"><i data-lucide="plus" class="w-4 h-4"></i> Yeni Uzman Ekle</button>
+          </div>
+          <div class="grid md:grid-cols-2 gap-6">${STAFF.map(stf => `
+            <div class="bg-white border border-rose-50 rounded-3xl p-6 shadow-sm flex items-start gap-5 hover:border-rose-200 transition-colors">
+              <img src="${stf.img}" class="w-20 h-20 rounded-full object-cover border-4 border-rose-50 shrink-0 shadow-sm">
+              <div class="flex-1">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <p class="text-stone-800 font-display text-2xl font-semibold">${stf.name}</p>
+                    <p class="text-sm text-primary font-medium mt-0.5">${stf.title}</p>
+                  </div>
+                  <div class="flex gap-2">
+                    <button onclick="openEditStaff(${stf.id})" class="text-blue-500 hover:text-blue-700 bg-blue-50 p-2 rounded-xl transition-colors" title="Düzenle"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                    <button onclick="deleteStaff(${stf.id})" class="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded-xl transition-colors" title="Sil"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                  </div>
+                </div>
+                <p class="text-xs text-stone-500 mt-3 italic line-clamp-2" title="${stf.bio || ''}">"${stf.bio || 'Henüz biyografi eklenmemiş.'}"</p>
+                <div class="mt-4 flex flex-wrap gap-2">${stf.tags.map(tagId => SERVICES.find(s => s.id === tagId)?.name).filter(Boolean).map(srv => `<span class="px-3 py-1 bg-stone-50 border border-stone-100 text-stone-600 rounded-full text-[10px] uppercase font-semibold tracking-wider">${srv}</span>`).join('')}</div>
+              </div>
+            </div>
+          `).join('')}</div>
+        `;
+      }
+      else if (state.adminTab === 'settings') {
+        content = `
+          <h2 class="text-3xl text-stone-800 font-display font-semibold mb-8">Sistem & Profil Ayarları</h2>
+          <div class="flex gap-6 mb-8 border-b border-stone-200 overflow-x-auto hide-scrollbar">
+            <button onclick="setSettingsTab('contact')" class="pb-3 text-sm font-semibold uppercase tracking-wider shrink-0 ${state.settingsTab==='contact'?'text-primary border-b-2 border-primary':'text-stone-400'}">İletişim Bilgileri</button>
+            <button onclick="setSettingsTab('gallery')" class="pb-3 text-sm font-semibold uppercase tracking-wider shrink-0 ${state.settingsTab==='gallery'?'text-primary border-b-2 border-primary':'text-stone-400'}">Galeri</button>
+            <button onclick="setSettingsTab('users')" class="pb-3 text-sm font-semibold uppercase tracking-wider shrink-0 ${state.settingsTab==='users'?'text-primary border-b-2 border-primary':'text-stone-400'}">Personel Hesapları</button>
+            <button onclick="setSettingsTab('profile')" class="pb-3 text-sm font-semibold uppercase tracking-wider shrink-0 ${state.settingsTab==='profile'?'text-primary border-b-2 border-primary':'text-stone-400'}">Kendi Profilim</button>
+          </div>
+        `;
+        if(state.settingsTab === 'contact') {
+          content += `<form onsubmit="saveContactInfo(event)" class="bg-white rounded-3xl p-8 border border-rose-50 shadow-sm max-w-2xl space-y-5"><div class="grid grid-cols-2 gap-5"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Telefon</label><input id="cPhone" value="${state.contact.phone}" class="w-full border border-stone-200 bg-stone-50 rounded-2xl px-5 py-4 focus:outline-none focus:ring-1 focus:ring-primary text-sm"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">WhatsApp No (Örn: 90555...)</label><input id="cWa" value="${state.contact.whatsapp}" class="w-full border border-stone-200 bg-stone-50 rounded-2xl px-5 py-4 focus:outline-none focus:ring-1 focus:ring-primary text-sm"></div></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">E-posta</label><input id="cEmail" value="${state.contact.email}" class="w-full border border-stone-200 bg-stone-50 rounded-2xl px-5 py-4 focus:outline-none focus:ring-1 focus:ring-primary text-sm"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Adres</label><input id="cAddress" value="${state.contact.address}" class="w-full border border-stone-200 bg-stone-50 rounded-2xl px-5 py-4 focus:outline-none focus:ring-1 focus:ring-primary text-sm"></div><div class="grid grid-cols-2 gap-5"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Instagram</label><input id="cInsta" value="${state.contact.instagram}" class="w-full border border-stone-200 bg-stone-50 rounded-2xl px-5 py-4 focus:outline-none focus:ring-1 focus:ring-primary text-sm"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Facebook</label><input id="cFace" value="${state.contact.facebook}" class="w-full border border-stone-200 bg-stone-50 rounded-2xl px-5 py-4 focus:outline-none focus:ring-1 focus:ring-primary text-sm"></div></div><button type="submit" class="bg-primary text-white px-10 py-4 rounded-full font-medium mt-4 shadow-md">Ayarları Kaydet</button></form>`;
+        } else if(state.settingsTab === 'gallery') {
+          content += `<form onsubmit="saveGalleryInfo(event)" class="bg-white rounded-3xl p-8 border border-rose-50 shadow-sm max-w-2xl space-y-5"><p class="text-sm text-stone-500 mb-4">Görsellerin tam bağlantı (URL) adreslerini giriniz.</p><input id="g1" value="${state.gallery[0]}" class="w-full border border-stone-200 bg-stone-50 rounded-2xl px-5 py-4 focus:outline-none text-sm"><input id="g2" value="${state.gallery[1]}" class="w-full border border-stone-200 bg-stone-50 rounded-2xl px-5 py-4 focus:outline-none text-sm"><input id="g3" value="${state.gallery[2]}" class="w-full border border-stone-200 bg-stone-50 rounded-2xl px-5 py-4 focus:outline-none text-sm"><input id="g4" value="${state.gallery[3]}" class="w-full border border-stone-200 bg-stone-50 rounded-2xl px-5 py-4 focus:outline-none text-sm"><button type="submit" class="bg-primary text-white px-10 py-4 rounded-full font-medium mt-4 shadow-md">Görselleri Güncelle</button></form>`;
+        } else if(state.settingsTab === 'profile') {
+          content += `<form onsubmit="updateProfile(event)" class="bg-white rounded-3xl p-8 border border-rose-50 shadow-sm max-w-xl space-y-6"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Mevcut Kullanıcı Adı / E-posta</label><input disabled value="${state.currentUser.email}" class="w-full border border-stone-100 bg-stone-50 rounded-2xl px-5 py-4 text-stone-400 cursor-not-allowed"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Yeni Şifre Belirle</label><input id="myPass" required type="password" placeholder="Yeni şifrenizi girin..." class="w-full border border-stone-200 rounded-2xl px-5 py-4 focus:outline-none focus:ring-1 focus:ring-primary"></div><button type="submit" class="bg-primary text-white px-8 py-3.5 rounded-2xl font-medium mt-2 shadow-md">Şifreyi Güncelle</button></form>`;
+        } else {
+          content += `
+            <div class="flex items-center justify-between mb-6"><h3 class="text-xl text-stone-800 font-display font-semibold">Sistem Personel Girişleri</h3><button onclick="state.modals.addUser=true; render()" class="bg-stone-800 text-white px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 font-medium"><i data-lucide="user-plus" class="w-4 h-4"></i> Personel Hesabı Ekle</button></div>
+            <div class="bg-white rounded-3xl border border-rose-50 shadow-sm overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-stone-50 text-stone-500 text-xs uppercase font-semibold border-b border-stone-100"><tr><th class="px-6 py-5">Personel Adı</th><th class="px-6 py-5">Erişim Yetkileri (Sayfalar)</th></tr></thead><tbody class="divide-y divide-stone-50">
+                ${USERS.map(u => `<tr class="hover:bg-rose-50/30"><td class="px-6 py-5"><p class="font-semibold text-stone-800">${u.name}</p><p class="text-xs text-stone-500 mt-1">${u.email} <span class="text-rose-400 ml-2">(${u.role})</span></p></td><td class="px-6 py-5"><div class="flex flex-wrap gap-2">${u.permissions.map(p => { const tl = ADMIN_PAGES.find(t=>t.id===p); return tl ? `<span class="px-2.5 py-1 bg-rose-50 text-primary rounded text-[10px] uppercase font-bold tracking-wider">${tl.label}</span>` : ''; }).join('')}</div></td></tr>`).join('')}
+            </tbody></table></div>
+          `;
+        }
+      }
+
+      const activeTabsData = ADMIN_PAGES.filter(t => state.currentUser.permissions.includes(t.id));
+
+      return `
+        <div class="flex flex-col bg-[#fdf2f8] min-h-screen relative z-10 pt-20">
+          <!-- TOP NAVBAR -->
+          <div class="fixed top-0 left-0 right-0 h-20 bg-white/90 backdrop-blur-lg border-b border-rose-100 shadow-sm z-40 flex items-center px-6 justify-between transition-all">
+            <div class="flex items-center gap-4">
+              <button onclick="toggleSidebar()" class="p-3 bg-rose-50 text-primary rounded-2xl hover:bg-primary hover:text-white transition-all shadow-sm"><i data-lucide="${state.sidebarOpen ? 'x' : 'menu'}" class="w-6 h-6"></i></button>
+              <span class="text-2xl text-stone-800 font-display font-semibold tracking-wide hidden sm:block">Belle<span class="text-primary italic">Rose</span></span>
+            </div>
+            
+            ${!state.sidebarOpen ? `
+            <div class="flex items-center gap-3 overflow-x-auto hide-scrollbar pl-4">
+              ${activeTabsData.map(t => `<button onclick="setAdminTab('${t.id}')" title="${t.label}" class="shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-sm border ${state.adminTab === t.id ? 'bg-primary text-white border-primary ring-4 ring-rose-100' : 'bg-white text-stone-500 hover:bg-rose-50 border-stone-100 hover:text-primary'}"><i data-lucide="${t.icon}" class="w-5 h-5"></i></button>`).join('')}
+              <button onclick="logoutAdmin()" title="Çıkış Yap" class="shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-sm border bg-stone-800 text-white hover:bg-stone-700 border-stone-800 ml-2"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+            </div>
+            ` : `<div class="text-sm font-medium text-stone-400">Yönetim Menüsü</div>`}
+          </div>
+
+          <!-- SIDEBAR -->
+          ${state.sidebarOpen ? `
+          <aside class="fixed top-20 left-0 bottom-0 w-72 bg-white border-r border-rose-100 shadow-2xl z-50 overflow-y-auto flex flex-col transition-all">
+            <nav class="flex-1 px-4 py-6 space-y-2">${activeTabsData.map(t => `<button onclick="setAdminTab('${t.id}'); toggleSidebar();" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-sm transition-all ${state.adminTab === t.id ? 'bg-primary text-white shadow-md font-medium' : 'text-stone-500 hover:bg-rose-50 hover:text-primary'}"><i data-lucide="${t.icon}" class="w-5 h-5"></i> ${t.label}</button>`).join('')}</nav>
+            <div class="p-6 border-t border-rose-50"><button onclick="logoutAdmin()" class="w-full flex items-center justify-center gap-3 px-5 py-4 text-sm text-rose-400 hover:bg-rose-50 transition-colors rounded-2xl font-medium"><i data-lucide="log-out" class="w-5 h-5"></i> Güvenli Çıkış</button></div>
+          </aside>
+          ` : ''}
+
+          <main class="flex-1 p-6 lg:p-10 max-w-7xl mx-auto w-full transition-all">${content}</main>
+        </div>
+      `;
+    }
+
+    // --- MODALLAR ---
+    function renderModals() {
+      let m = '';
+      if(state.modals.postpone) {
+        const apt = APPOINTMENTS.find(a => a.id === state.activeId);
+        if(apt) {
+          m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-2">Zamanı Değiştir</h3><p class="text-sm text-stone-500 mb-6">${apt.customer} <br><span class="text-xs">${apt.service}</span></p><form onsubmit="savePostpone(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Yeni Tarih</label><input id="pDate" type="date" required value="${apt.date}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 focus:ring-1 focus:ring-primary bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Yeni Saat</label><input id="pTime" type="time" required value="${apt.time}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 focus:ring-1 focus:ring-primary bg-stone-50"></div><div class="flex gap-3 mt-8"><button type="button" onclick="state.modals.postpone=false; render()" class="flex-1 py-3.5 text-sm font-medium text-stone-500 bg-stone-100 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-blue-500 rounded-2xl shadow-md">Kaydet</button></div></form></div></div>`;
+        }
+      }
+      if(state.modals.payment) {
+        const apt = APPOINTMENTS.find(a => a.id === state.activeId); 
+        if(apt) {
+          const srv = SERVICES.find(s => s.name === apt.service);
+          m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><div class="w-14 h-14 rounded-full bg-green-50 text-green-500 flex items-center justify-center mb-4"><i data-lucide="banknote" class="w-6 h-6"></i></div><h3 class="text-2xl text-stone-800 font-display font-semibold mb-2">Ödeme Al & Tamamla</h3><p class="text-sm text-stone-500 mb-6">${apt.customer} - ${apt.time}</p><form onsubmit="savePayment(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Uygulanan İşlem(ler)</label><input id="payDesc" type="text" required value="${apt.service}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50 text-sm"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Tahsil Edilen Tutar (₺)</label><input id="payAmount" type="number" required value="${srv ? srv.priceMin : 0}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Ödeme Yöntemi</label><select id="payMethod" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"><option>Kredi Kartı</option><option>Nakit</option><option>Havale/EFT</option></select></div><div class="flex gap-3 mt-8"><button type="button" onclick="state.modals.payment=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-green-500 rounded-2xl shadow-md">İşlemi Tamamla</button></div></form></div></div>`;
+        }
+      }
+      if(state.modals.addStock) {
+        m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-6">Stok Ekle</h3><form onsubmit="saveStock(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Ürün Adı</label><input id="iName" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Miktar</label><input id="iStock" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Birim</label><input id="iUnit" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Kritik Uyarı</label><input id="iMin" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Birim Maliyet</label><input id="iCost" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div></div><div class="flex gap-3 mt-6"><button type="button" onclick="state.modals.addStock=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-primary rounded-2xl shadow-md">Kaydet</button></div></form></div></div>`;
+      }
+      
+      // HİZMET DÜZENLEME / EKLEME MODALI (GÜNCELLENDİ)
+      if(state.modals.addService) {
+        const isEdit = state.editServiceId !== null;
+        const srv = isEdit ? SERVICES.find(s => s.id === state.editServiceId) : null;
+        const currentImg = state.tempServiceImg || (srv ? srv.img : 'https://images.unsplash.com/photo-1616394584738-fc6e612e71c9?w=600&q=80');
+
+        m += `
+        <div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4 py-8">
+          <div class="bg-white rounded-[2rem] p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto hide-scrollbar">
+            <h3 class="text-2xl text-stone-800 font-display font-semibold mb-6">${isEdit ? 'Hizmeti Düzenle' : 'Yeni Hizmet Ekle'}</h3>
+            <form onsubmit="saveService(event)" class="space-y-4">
+              
+              <div class="flex flex-col sm:flex-row gap-4 items-center sm:items-start mb-2">
+                <div class="w-24 h-24 rounded-2xl overflow-hidden border border-rose-100 shrink-0 shadow-sm">
+                  <img id="serviceImgPreview" src="${currentImg}" class="w-full h-full object-cover">
+                </div>
+                <div class="flex-1 w-full">
+                  <label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Hizmet Fotoğrafı (.jpg, .png)</label>
+                  <input type="file" accept=".jpg, .jpeg, .png" onchange="handleServiceImage(event)" class="w-full text-sm text-stone-500 file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-rose-50 file:text-primary hover:file:bg-rose-100 cursor-pointer">
+                </div>
+              </div>
+
+              <div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-1">Hizmet Adı</label><input id="sName" value="${srv?srv.name:''}" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50 text-sm"></div>
+              
+              <div class="grid grid-cols-2 gap-4">
+                <div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-1">Kategori</label><input id="sCat" value="${srv?srv.category:''}" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50 text-sm"></div>
+                <div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-1">Süre (Dk)</label><input id="sDur" value="${srv?srv.duration:''}" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50 text-sm"></div>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-1">Min Fiyat (₺)</label><input id="sMin" value="${srv?srv.priceMin:''}" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50 text-sm"></div>
+                <div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-1">Max Fiyat (₺)</label><input id="sMax" value="${srv?srv.priceMax:''}" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50 text-sm"></div>
+              </div>
+
+              <div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-1">Kısa Açıklama (Kart İçin)</label><input id="sDesc" value="${srv?srv.desc:''}" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50 text-sm" placeholder="Örn: Cildinizi yeniler."></div>
+              <div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-1">Detaylı Açıklama (Rehber İçin)</label><textarea id="sLongDesc" required rows="3" class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50 text-sm resize-none" placeholder="Blog tarzında detaylı anlatım...">${srv?(srv.longDesc||''):''}</textarea></div>
+
+              <div class="flex gap-3 mt-6"><button type="button" onclick="state.modals.addService=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-primary rounded-2xl shadow-md">Kaydet</button></div>
+            </form>
+          </div>
+        </div>`;
+      }
+      if(state.modals.addFinance) {
+        m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-6">Finansal İşlem Ekle</h3><form onsubmit="saveFinance(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">İşlem Türü</label><select id="fType" class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"><option value="income">Gelir</option><option value="expense">Gider</option></select></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Açıklama</label><input id="fDesc" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Tutar (₺)</label><input id="fAmount" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Yöntem</label><select id="fMethod" class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"><option>Nakit</option><option>Kredi Kartı</option><option>Havale</option></select></div></div><div class="flex gap-3 mt-6"><button type="button" onclick="state.modals.addFinance=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-primary rounded-2xl shadow-md">Kaydet</button></div></form></div></div>`;
+      }
+      if(state.modals.addStaff) {
+        const isEdit = state.editStaffId !== null;
+        const stf = isEdit ? STAFF.find(s => s.id === state.editStaffId) : null;
+        const currentImg = state.tempStaffImg || (stf ? stf.img : 'https://via.placeholder.com/400x400?text=G%C3%B6rsel+Yok');
+        
+        m += `
+        <div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4">
+          <div class="bg-white rounded-[2rem] p-8 max-w-2xl w-full">
+            <h3 class="text-2xl text-stone-800 font-display font-semibold mb-6">${isEdit ? 'Uzmanı Düzenle' : 'Yeni Uzman Ekle'}</h3>
+            <form onsubmit="saveStaff(event)" class="space-y-5">
+              
+              <div class="flex flex-col sm:flex-row gap-6 items-center sm:items-start mb-4">
+                <div class="w-24 h-24 rounded-full overflow-hidden border-4 border-rose-50 shrink-0">
+                  <img id="staffImgPreview" src="${currentImg}" class="w-full h-full object-cover">
+                </div>
+                <div class="flex-1 w-full">
+                  <label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Profil Fotoğrafı Seçin</label>
+                  <input type="file" accept=".jpg, .jpeg, .png" onchange="handleStaffImage(event)" class="w-full text-sm text-stone-500 file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-rose-50 file:text-primary hover:file:bg-rose-100 cursor-pointer">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Ad Soyad</label>
+                  <input id="newStaffName" required type="text" value="${stf ? stf.name : ''}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50 text-sm">
+                </div>
+                <div>
+                  <label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Unvan / Meslek</label>
+                  <input id="newStaffTitle" required type="text" value="${stf ? stf.title : ''}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50 text-sm">
+                </div>
+              </div>
+
+              <div>
+                <label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Uzman Biyografisi (Bio)</label>
+                <textarea id="newStaffBio" required rows="3" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50 text-sm resize-none" placeholder="Müşterilere gösterilecek açıklama...">${stf ? (stf.bio||'') : ''}</textarea>
+              </div>
+
+              <div>
+                <label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-3">Uzmanlık Alanları (Hizmet Seçimi)</label>
+                <div class="grid grid-cols-2 gap-3 p-5 bg-rose-50/50 rounded-2xl border border-rose-100 max-h-32 overflow-y-auto">
+                  ${SERVICES.map(s => `
+                    <label class="flex items-center gap-3 text-sm text-stone-700 cursor-pointer">
+                      <input type="checkbox" value="${s.id}" class="service-checkbox w-4 h-4 accent-primary" ${(stf && stf.tags.includes(s.id)) ? 'checked' : ''}> ${s.name}
+                    </label>
+                  `).join('')}
+                </div>
+              </div>
+
+              <div class="flex gap-3 mt-6">
+                <button type="button" onclick="state.modals.addStaff=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button>
+                <button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-primary rounded-2xl shadow-md">Kaydet</button>
+              </div>
+            </form>
+          </div>
+        </div>`;
+      }
+      if(state.modals.addUser) {
+        const adminTabs = [{id:'overview',l:'Genel Bakış'},{id:'startDay',l:'Güne Başla'},{id:'appointments',l:'Randevular'},{id:'finance',l:'Kasa/Gelir'},{id:'inventory',l:'Stok'},{id:'services',l:'Hizmetler'},{id:'staff',l:'Uzmanlar'},{id:'settings',l:'Ayarlar'}];
+        m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-lg w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-6">Personel Hesabı Oluştur</h3><form onsubmit="saveUser(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Kullanıcı Adı</label><input id="newUName" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Giriş E-postası</label><input id="newUEmail" required type="email" class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Şifre</label><input id="newUPass" required type="text" class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-3">Erişim İzinleri (Sayfalar)</label><div class="grid grid-cols-2 gap-3 p-5 bg-rose-50/50 rounded-2xl border border-rose-100">${adminTabs.map(t => `<label class="flex items-center gap-3 text-sm text-stone-700 cursor-pointer"><input type="checkbox" value="${t.id}" class="perm-checkbox w-4 h-4 accent-rose-500"> ${t.l}</label>`).join('')}</div></div><div class="flex gap-3 mt-6"><button type="button" onclick="state.modals.addUser=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-stone-800 rounded-2xl shadow-md">Oluştur</button></div></form></div></div>`;
+      }
+      if(state.modals.clearHistory) {
+        m += `
+          <div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4">
+            <div class="bg-white rounded-[2rem] p-8 max-w-sm w-full">
+              <div class="flex items-center justify-between mb-4"><h3 class="text-2xl text-stone-800 font-display font-semibold flex items-center gap-2"><i data-lucide="trash-2" class="w-6 h-6 text-red-500"></i> Geçmişi Sil</h3><button onclick="state.modals.clearHistory=false; render()" class="text-stone-400 hover:text-primary"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+              <p class="text-xs text-stone-500 mb-6">Sistemden kalıcı olarak silinecek randevu aralığını seçin. Bu işlem geri alınamaz.</p>
+              <form onsubmit="clearAppointmentHistory(event)" class="space-y-4">
+                <div>
+                  <label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Silinecek Tarih Aralığı</label>
+                  <select id="clearRange" onchange="document.getElementById('customDates').style.display = this.value === 'custom' ? 'grid' : 'none'" class="w-full border border-stone-200 rounded-2xl px-5 py-3 focus:ring-1 focus:ring-primary bg-stone-50 text-sm outline-none">
+                    <option value="1d">Son 1 Gün (Bugün)</option>
+                    <option value="3d">Son 3 Gün</option>
+                    <option value="1w">Son 1 Hafta</option>
+                    <option value="1m">Son 1 Ay</option>
+                    <option value="custom">Özel Tarih Aralığı Seç</option>
+                  </select>
+                </div>
+                <div id="customDates" style="display: none;" class="grid-cols-2 gap-3 p-4 bg-rose-50/50 rounded-2xl border border-rose-100">
+                  <div><label class="text-[10px] font-semibold text-stone-500 uppercase block mb-1">Başlangıç</label><input type="date" id="clearStart" class="w-full border border-stone-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"></div>
+                  <div><label class="text-[10px] font-semibold text-stone-500 uppercase block mb-1">Bitiş</label><input type="date" id="clearEnd" class="w-full border border-stone-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"></div>
+                </div>
+                <div class="flex gap-3 mt-6">
+                  <button type="button" onclick="state.modals.clearHistory=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button>
+                  <button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-2xl shadow-md transition-colors">Kalıcı Sil</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        `;
+      }
+      if(state.modals.density) {
+        m += `
+          <div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4">
+            <div class="bg-white rounded-[2rem] p-8 max-w-lg w-full">
+              <div class="flex items-center justify-between mb-6"><h3 class="text-2xl text-stone-800 font-display font-semibold">Randevu Yoğunluğu</h3><button onclick="state.modals.density=false; render()" class="text-stone-400 hover:text-primary"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+              <p class="text-sm text-stone-500 mb-6 bg-rose-50 p-4 rounded-xl border border-rose-100">
+                Aynı saat diliminde bir hizmet için kaç kişinin online randevu alabileceğini belirleyin.<br><br>
+                <strong class="text-emerald-600">Sakin:</strong> Aynı saate 3 randevu<br>
+                <strong class="text-orange-500">Orta:</strong> Aynı saate 2 randevu<br>
+                <strong class="text-red-500">Yoğun:</strong> Aynı saate 1 randevu
+              </p>
+              <div class="space-y-4 max-h-72 overflow-y-auto pr-2">
+                ${SERVICES.map(s => `
+                  <div class="border border-stone-200 rounded-2xl p-4 flex flex-col gap-3">
+                    <p class="font-semibold text-stone-800 text-sm">${s.name}</p>
+                    <div class="flex gap-2">
+                      <button onclick="setDensity(${s.id}, 3)" class="flex-1 py-2 text-xs font-semibold rounded-xl transition-colors ${(state.densities[s.id]||1)===3?'bg-emerald-500 text-white':'bg-stone-100 text-stone-500'}">Sakin (3)</button>
+                      <button onclick="setDensity(${s.id}, 2)" class="flex-1 py-2 text-xs font-semibold rounded-xl transition-colors ${(state.densities[s.id]||1)===2?'bg-orange-500 text-white':'bg-stone-100 text-stone-500'}">Orta (2)</button>
+                      <button onclick="setDensity(${s.id}, 1)" class="flex-1 py-2 text-xs font-semibold rounded-xl transition-colors ${(state.densities[s.id]||1)===1?'bg-red-500 text-white':'bg-stone-100 text-stone-500'}">Yoğun (1)</button>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+      if(state.modals.waConfirm) {
+        const unconfirmed = APPOINTMENTS.filter(a => a.status === 'Bekliyor' && !a.isConfirmed);
+        m += `
+          <div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4">
+            <div class="bg-white rounded-[2rem] p-8 max-w-lg w-full">
+              <div class="flex items-center justify-between mb-4"><h3 class="text-xl text-stone-800 font-display font-semibold flex items-center gap-2"><i data-lucide="message-circle" class="w-6 h-6 text-emerald-500"></i> WhatsApp Teyit Yönetimi</h3><button onclick="state.modals.waConfirm=false; render()" class="text-stone-400 hover:text-primary"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+              <p class="text-sm text-stone-500 mb-6 bg-emerald-50 p-4 rounded-xl border border-emerald-100 text-emerald-800">
+                Müşterilerinize tek tıkla WhatsApp üzerinden teyit mesajı gönderin ve aldığınız yanıta göre durumu manuel olarak güncelleyin.
+              </p>
+              <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                ${unconfirmed.length === 0 ? '<p class="text-center text-stone-400 py-10 font-medium">Teyit bekleyen randevu bulunmuyor.</p>' : unconfirmed.map(a => `
+                  <div class="bg-white border border-stone-200 rounded-2xl p-5 shadow-sm">
+                    <p class="text-sm text-stone-800 font-semibold">${a.customer} <span class="text-xs text-stone-400 font-normal ml-2">${a.phone}</span></p>
+                    <p class="text-xs text-primary font-medium mt-1">${a.date} ${a.time} - ${a.service}</p>
+                    <div class="flex gap-2 mt-4">
+                      <a href="https://wa.me/${formatPhoneForWA(a.phone)}?text=${encodeURIComponent(`Merhaba ${a.customer.split(' ')[0]} Hanım, BelleRose Güzellik Merkezi'nden ulaşıyoruz. ${a.date} ${a.time} tarihindeki ${a.service} randevunuzu teyit etmek için bu mesaja dönüş yapabilirsiniz. Sevgiler!`)}" target="_blank" class="flex-1 bg-emerald-500 text-white flex justify-center items-center gap-1.5 text-xs font-semibold py-2.5 rounded-xl hover:bg-emerald-600 transition-colors">
+                        <i data-lucide="message-circle" class="w-4 h-4"></i> Mesaj At
+                      </a>
+                      <button onclick="confirmClient(${a.id}, true)" class="flex-1 bg-blue-500 text-white text-xs font-semibold py-2.5 rounded-xl hover:bg-blue-600 transition-colors">Teyit Edildi</button>
+                      <button onclick="confirmClient(${a.id}, false)" class="flex-1 bg-white border border-stone-200 text-red-500 text-xs font-semibold py-2.5 rounded-xl hover:bg-red-50 transition-colors">İptal (Sil)</button>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+      return m;
+    }
+
+    // Uygulamayı Başlat
+    loadData();
+    render();
+  </script>
+</body>
+</html>    .marquee-content { display: inline-block; animation: marquee 40s linear infinite; }
     .marquee-content:hover { animation-play-state: paused; }
     @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
