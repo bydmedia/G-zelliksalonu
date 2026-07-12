@@ -49,9 +49,9 @@
   <div id="app"></div>
 
   <script>
-    const SYSTEM_TODAY = "2026-07-11"; 
+    const SYSTEM_TODAY = "2026-07-12"; 
 
-    // --- SİSTEM SABİTLERİ (ÇAKIŞMAYI ÖNLEMEK İÇİN) ---
+    // --- SİSTEM SABİTLERİ ---
     const ADMIN_PAGES = [
       { id: 'overview', label: 'Genel Bakış', icon: 'pie-chart' },
       { id: 'startDay', label: 'Güne Başla', icon: 'sun' },
@@ -80,8 +80,8 @@
     ];
 
     let defaultAppointments = [
-      { id: 101, customer: "Zeynep Arslan", phone: "0532 111 2233", service: "Medikal Cilt Bakımı", staff: "Elif Yılmaz", date: "2026-07-11", time: "10:00", status: "Bekliyor", isConfirmed: true },
-      { id: 102, customer: "Merve Şahin", phone: "0555 444 5566", service: "Kalıcı Oje & Nail Art", staff: "Sena Demir", date: "2026-07-11", time: "14:30", status: "Bekliyor", isConfirmed: false }
+      { id: 101, customer: "Zeynep Arslan", phone: "0532 111 2233", service: "Medikal Cilt Bakımı", staff: "Elif Yılmaz", date: "2026-07-12", time: "10:00", status: "Bekliyor", isConfirmed: true },
+      { id: 102, customer: "Merve Şahin", phone: "0555 444 5566", service: "Kalıcı Oje & Nail Art", staff: "Sena Demir", date: "2026-07-12", time: "14:30", status: "Bekliyor", isConfirmed: false }
     ];
 
     let defaultInventory = [
@@ -89,8 +89,8 @@
     ];
 
     let defaultTransactions = [
-      { id: 1, type: "income", source: "appointment", desc: "Medikal Cilt Bakımı - Zeynep A.", amount: 1200, method: "Kredi Kartı", date: "2026-07-11" },
-      { id: 2, type: "expense", source: "inventory", desc: "Stok Alımı: Serum Takviyesi", amount: 900, method: "Havale", date: "2026-07-09" }
+      { id: 1, type: "income", source: "appointment", desc: "Medikal Cilt Bakımı - Ayşe Y.", amount: 1200, method: "Kredi Kartı", date: "2026-07-12" },
+      { id: 2, type: "expense", source: "inventory", desc: "Stok Alımı: Serum Takviyesi", amount: 900, method: "Havale", date: "2026-07-11" }
     ];
 
     // --- AKTİF DEĞİŞKENLER ---
@@ -229,7 +229,7 @@
     window.setSettingsTab = (tab) => { state.settingsTab = tab; render(); };
     window.toggleSidebar = () => { state.sidebarOpen = !state.sidebarOpen; render(); };
 
-    // İşlem / Randevu Yönetimi
+    // Randevu & İşlemler
     window.cancelAppointment = (id) => { if(confirm("Randevuyu iptal etmek istediğinize emin misiniz?")) { APPOINTMENTS.find(a => a.id === id).status = "İptal Edildi"; saveData(); render(); } };
     window.deleteAppointment = (id) => { if(confirm("Bu randevuyu kalıcı olarak silmek istediğinize emin misiniz?")) { APPOINTMENTS = APPOINTMENTS.filter(a => a.id !== id); saveData(); render(); } };
     
@@ -242,17 +242,22 @@
       const customDesc = document.getElementById('payDesc').value;
       const amount = parseFloat(document.getElementById('payAmount').value);
       const method = document.getElementById('payMethod').value;
+      
       TRANSACTIONS.push({ id: Date.now(), type: "income", source: "appointment", desc: `${customDesc} - ${apt.customer}`, amount: amount, method: method, date: SYSTEM_TODAY }); 
-      apt.status = "Tamamlandı"; state.modals.payment = false; saveData(); render(); 
+      apt.status = "Ödendi / Tamamlandı"; 
+      state.modals.payment = false; 
+      saveData(); 
+      render(); 
     };
 
     window.clearAppointmentHistory = (e) => {
         e.preventDefault();
         const range = document.getElementById('clearRange').value;
         let start = null, end = null;
-        const today = new Date(SYSTEM_TODAY); today.setHours(0,0,0,0);
+        const today = new Date(SYSTEM_TODAY); 
+        today.setHours(0,0,0,0);
 
-        if (range === '1d') { start = new Date(today); end = new Date(today); }
+        if (range === '1d') { start = new Date(today); start.setDate(start.getDate()-1); end = new Date(today); }
         else if (range === '3d') { start = new Date(today); start.setDate(start.getDate()-3); end = new Date(today); }
         else if (range === '1w') { start = new Date(today); start.setDate(start.getDate()-7); end = new Date(today); }
         else if (range === '1m') { start = new Date(today); start.setDate(start.getDate()-30); end = new Date(today); }
@@ -266,9 +271,10 @@
         if(!start || !end) return;
         start.setHours(0,0,0,0); end.setHours(23,59,59,999);
 
-        if(confirm('Belirtilen aralıktaki tüm randevular silinecek. Onaylıyor musunuz?')) {
+        if(confirm('Belirtilen aralıktaki tüm randevular sistemden kalıcı olarak silinecek. Onaylıyor musunuz?')) {
             APPOINTMENTS = APPOINTMENTS.filter(a => {
-                const d = new Date(a.date); d.setHours(12,0,0,0);
+                const d = new Date(a.date);
+                d.setHours(12,0,0,0);
                 return d < start || d > end; 
             });
             saveData(); state.modals.clearHistory = false; render();
@@ -278,27 +284,64 @@
     // Yoğunluk & Teyit Modülleri
     window.setDensity = (srvId, level) => { state.densities[srvId] = level; saveData(); render(); }; 
     window.confirmClient = (id, willAttend) => {
-      if(willAttend) { APPOINTMENTS.find(a => a.id === id).isConfirmed = true; alert("Teyit edildi!"); } 
-      else { APPOINTMENTS = APPOINTMENTS.filter(a => a.id !== id); alert("Randevu silindi."); }
+      if(willAttend) { 
+        APPOINTMENTS.find(a => a.id === id).isConfirmed = true; 
+        alert("Randevu başarıyla teyit edildi!");
+      } else { 
+        APPOINTMENTS = APPOINTMENTS.filter(a => a.id !== id); 
+        alert("Müşteri katılmayacağını belirtti. Randevu sistemden silindi."); 
+      }
       saveData(); render();
     };
 
     // Diğer Kayıt İşlemleri
-    window.saveStock = (e) => { e.preventDefault(); const stock = parseInt(document.getElementById('iStock').value); const cost = parseFloat(document.getElementById('iCost').value); const name = document.getElementById('iName').value; INVENTORY.push({ id: Date.now(), name, stock, unit: document.getElementById('iUnit').value, minAlert: parseInt(document.getElementById('iMin').value), cost }); const totalCost = stock * cost; if(totalCost > 0) TRANSACTIONS.push({ id: Date.now(), type: 'expense', source: 'inventory', desc: `Stok Alımı: ${name}`, amount: totalCost, method: 'Banka İşlemi', date: SYSTEM_TODAY }); state.modals.addStock = false; saveData(); render(); };
+    window.saveStock = (e) => { e.preventDefault(); const stock = parseInt(document.getElementById('iStock').value); const cost = parseFloat(document.getElementById('iCost').value); INVENTORY.push({ id: Date.now(), name: document.getElementById('iName').value, stock, unit: document.getElementById('iUnit').value, minAlert: parseInt(document.getElementById('iMin').value), cost }); const totalCost = stock * cost; if(totalCost > 0) TRANSACTIONS.push({ id: Date.now(), type: 'expense', source: 'inventory', desc: `Stok Alımı: ${document.getElementById('iName').value}`, amount: totalCost, method: 'Banka İşlemi', date: SYSTEM_TODAY }); state.modals.addStock = false; saveData(); render(); };
     window.saveService = (e) => { e.preventDefault(); SERVICES.push({ id: Date.now(), name: document.getElementById('sName').value, category: document.getElementById('sCat').value, duration: parseInt(document.getElementById('sDur').value), priceMin: parseInt(document.getElementById('sMin').value), priceMax: parseInt(document.getElementById('sMax').value), icon: "sparkles", img: "https://images.unsplash.com/photo-1616394584738-fc6e612e71c9?w=600&q=80", desc: "Yeni eklenen hizmet.", longDesc: "Hizmet açıklaması eklenmemiş." }); state.modals.addService = false; saveData(); render(); };
     window.deleteService = (id) => { if(confirm("Hizmeti silmek istediğinize emin misiniz?")) { SERVICES = SERVICES.filter(s => s.id !== id); saveData(); render(); } };
     window.saveFinance = (e) => { e.preventDefault(); TRANSACTIONS.push({ id: Date.now(), type: document.getElementById('fType').value, source: "extra", desc: document.getElementById('fDesc').value, amount: parseFloat(document.getElementById('fAmount').value), method: document.getElementById('fMethod').value, date: SYSTEM_TODAY }); state.modals.addFinance = false; saveData(); render(); };
-    window.saveContactInfo = (e) => { e.preventDefault(); state.contact = { phone: document.getElementById('cPhone').value, whatsapp: document.getElementById('cWa').value, email: document.getElementById('cEmail').value, address: document.getElementById('cAddress').value, instagram: document.getElementById('cInsta').value, facebook: document.getElementById('cFace').value }; alert("Bilgiler güncellendi!"); saveData(); render(); };
-    
-    window.saveUser = (e) => { e.preventDefault(); const perms = Array.from(document.querySelectorAll('.perm-checkbox:checked')).map(cb => cb.value); if(perms.length === 0) return alert("Yetki vermelisiniz."); USERS.push({ id: Date.now(), name: document.getElementById('newUName').value, email: document.getElementById('newUEmail').value, pass: document.getElementById('newUPass').value, role: "Personel", permissions: perms }); state.modals.addUser = false; saveData(); render(); };
-    window.updateProfile = (e) => { e.preventDefault(); const p = document.getElementById('myPass').value; if(p.length > 2) { state.currentUser.pass = p; alert("Şifre güncellendi!"); saveData(); } };
+    window.saveContactInfo = (e) => { e.preventDefault(); state.contact = { phone: document.getElementById('cPhone').value, whatsapp: document.getElementById('cWa').value, email: document.getElementById('cEmail').value, address: document.getElementById('cAddress').value, instagram: document.getElementById('cInsta').value, facebook: document.getElementById('cFace').value }; alert("İletişim bilgileri güncellendi!"); saveData(); render(); };
+
+    window.saveUser = (e) => {
+      e.preventDefault();
+      const perms = Array.from(document.querySelectorAll('.perm-checkbox:checked')).map(cb => cb.value);
+      if(perms.length === 0) return alert("Kullanıcıya en az bir sayfa yetkisi vermelisiniz.");
+      USERS.push({ id: Date.now(), name: document.getElementById('newUName').value, email: document.getElementById('newUEmail').value, pass: document.getElementById('newUPass').value, role: "Personel", permissions: perms });
+      state.modals.addUser = false; saveData(); render();
+    };
+
+    window.updateProfile = (e) => {
+      e.preventDefault();
+      const p = document.getElementById('myPass').value;
+      if(p.length > 2) { state.currentUser.pass = p; alert("Şifreniz başarıyla güncellendi!"); saveData(); }
+    };
 
     // UZMAN İŞLEMLERİ 
     window.openAddStaff = () => { state.editStaffId = null; state.tempStaffImg = ''; state.modals.addStaff = true; render(); };
     window.openEditStaff = (id) => { state.editStaffId = id; const stf = STAFF.find(s => s.id === id); state.tempStaffImg = stf.img || ''; state.modals.addStaff = true; render(); };
-    window.deleteStaff = (id) => { if(confirm('Uzmanı silmek istediğinize emin misiniz?')) { STAFF = STAFF.filter(s => s.id !== id); saveData(); render(); } };
-    window.handleStaffImage = (e) => { const file = e.target.files[0]; if (file) { const r = new FileReader(); r.onload = (ev) => { state.tempStaffImg = ev.target.result; document.getElementById('staffImgPreview').src = ev.target.result; }; r.readAsDataURL(file); } };
-    window.saveStaff = (e) => { e.preventDefault(); const tags = Array.from(document.querySelectorAll('.service-checkbox:checked')).map(cb => parseInt(cb.value)); if(tags.length === 0) return alert("En az bir uzmanlık alanı seçin."); const imgData = state.tempStaffImg || 'https://images.unsplash.com/photo-1595959183082-7b570b7e08e2?w=400&q=80'; if (state.editStaffId) { const stf = STAFF.find(s => s.id === state.editStaffId); stf.name = document.getElementById('newStaffName').value; stf.title = document.getElementById('newStaffTitle').value; stf.bio = document.getElementById('newStaffBio').value; stf.tags = tags; stf.img = imgData; } else { STAFF.push({ id: Date.now(), name: document.getElementById('newStaffName').value, title: document.getElementById('newStaffTitle').value, bio: document.getElementById('newStaffBio').value, tags, img: imgData }); } state.modals.addStaff = false; state.editStaffId = null; saveData(); render(); };
+    window.deleteStaff = (id) => { if(confirm('Bu uzmanı sistemden ve web sitesinden silmek istediğinize emin misiniz?')) { STAFF = STAFF.filter(s => s.id !== id); saveData(); render(); } };
+    window.handleStaffImage = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => { state.tempStaffImg = event.target.result; document.getElementById('staffImgPreview').src = event.target.result; };
+          reader.readAsDataURL(file);
+      }
+    };
+    window.saveStaff = (e) => {
+      e.preventDefault();
+      const tags = Array.from(document.querySelectorAll('.service-checkbox:checked')).map(cb => parseInt(cb.value));
+      if(tags.length === 0) return alert("En az bir uzmanlık alanı seçin.");
+      const imgData = state.tempStaffImg || 'https://images.unsplash.com/photo-1595959183082-7b570b7e08e2?w=400&q=80';
+      
+      if (state.editStaffId) {
+          const stf = STAFF.find(s => s.id === state.editStaffId);
+          stf.name = document.getElementById('newStaffName').value; stf.title = document.getElementById('newStaffTitle').value; 
+          stf.bio = document.getElementById('newStaffBio').value; stf.tags = tags; stf.img = imgData;
+      } else {
+          STAFF.push({ id: Date.now(), name: document.getElementById('newStaffName').value, title: document.getElementById('newStaffTitle').value, bio: document.getElementById('newStaffBio').value, tags, img: imgData });
+      }
+      state.modals.addStaff = false; state.editStaffId = null; saveData(); render();
+    };
 
     // --- RENDER MİMARİSİ ---
     function render() {
@@ -344,7 +387,7 @@
               ${SERVICES.map(s => `
                 <div class="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all border border-rose-50 cursor-pointer flex flex-col" onclick="openBooking()">
                   <div class="h-56 overflow-hidden relative">
-                    <img src="${s.img || 'https://images.unsplash.com/photo-1616394584738-fc6e612e71c9?w=600&q=80'}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                    <img src="${s.img}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="${s.name}">
                     <div class="absolute inset-0 bg-gradient-to-t from-stone-900/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-5"><p class="text-white text-sm font-medium">Randevu Al &rarr;</p></div>
                   </div>
                   <div class="p-6 flex-1 flex flex-col">
@@ -375,11 +418,11 @@
                 <div class="bg-white rounded-[2rem] overflow-hidden shadow-sm hover:shadow-xl transition-all border border-rose-50 p-8 flex flex-col items-center text-center relative group">
                   <div class="absolute top-0 inset-x-0 h-24 bg-gradient-to-b from-rose-50 to-transparent"></div>
                   <div class="w-32 h-32 rounded-full overflow-hidden mb-5 border-4 border-white shadow-md relative z-10">
-                    <img src="${stf.img || 'https://images.unsplash.com/photo-1595959183082-7b570b7e08e2?w=400&q=80'}" class="w-full h-full object-cover">
+                    <img src="${stf.img}" class="w-full h-full object-cover">
                   </div>
                   <h3 class="text-2xl text-stone-800 font-display font-semibold mb-1 relative z-10">${stf.name}</h3>
                   <p class="text-sm text-primary font-medium mb-4 relative z-10">${stf.title}</p>
-                  <p class="text-sm text-stone-500 leading-relaxed mb-6 flex-1 relative z-10">${stf.bio || 'Güzellik ve estetik alanında profesyonel hizmet sunar.'}</p>
+                  <p class="text-sm text-stone-500 leading-relaxed mb-6 flex-1 relative z-10">${stf.bio}</p>
                   <div class="flex flex-wrap justify-center gap-2 mt-auto relative z-10">
                     ${stf.tags.map(tagId => SERVICES.find(s => s.id === tagId)?.name).filter(Boolean).map(srv => `<span class="px-3 py-1 bg-rose-50 text-primary border border-rose-100 rounded-full text-[10px] uppercase font-semibold tracking-wider">${srv}</span>`).join('')}
                   </div>
@@ -420,7 +463,7 @@
               <div class="h-px w-16 bg-rose-300 mt-6 mx-auto opacity-50"></div>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-              ${state.gallery.map(url => `<div class="aspect-[4/5] rounded-3xl overflow-hidden shadow-sm"><img src="${url}" class="w-full h-full object-cover hover:scale-110 transition-transform duration-700"></div>`).join('')}
+              ${state.gallery.map(url => `<div class="aspect-[4/5] rounded-3xl overflow-hidden shadow-sm"><img src="${url}" class="w-full h-full object-cover hover:scale-110 transition-transform duration-700" alt="Galeri"></div>`).join('')}
             </div>
           </div>
         </section>
@@ -444,7 +487,7 @@
           </div>
         </section>
 
-        <!-- İletişim -->
+        <!-- İletişim (Daraltılmış) -->
         <section id="iletisim" class="px-6 py-12 bg-stone-900 text-stone-400">
           <div class="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 items-center">
             <div>
@@ -465,7 +508,7 @@
           </div>
         </section>
 
-        <!-- WhatsApp Butonu -->
+        <!-- WhatsApp Floating Button -->
         <a href="https://wa.me/${formatPhoneForWA(state.contact.whatsapp)}" target="_blank" class="fixed bottom-6 right-6 z-40 bg-green-500 hover:bg-green-600 text-white rounded-full px-6 py-4 flex items-center gap-3 shadow-lg shadow-green-500/30 transition-transform hover:scale-105 font-medium">
           <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
           WhatsApp İletişime Geç
@@ -484,7 +527,7 @@
       else if (s === 1) { 
         canNext = d.staff !== null; 
         const av = d.service ? STAFF.filter(stf => stf.tags.includes(d.service.id)) : STAFF; 
-        b = av.length === 0 ? `<p class="text-stone-400 text-center py-10">Uygun uzman bulunmuyor.</p>` : `<div class="grid sm:grid-cols-2 gap-4">${av.map(stf => `<button onclick="setBookingStaff(${stf.id})" class="text-left border rounded-3xl p-5 flex items-center gap-4 transition-all ${d.staff?.id === stf.id ? 'border-primary bg-rose-50 ring-1 ring-rose-200' : 'border-stone-100 hover:border-rose-200'}"><div class="w-14 h-14 rounded-full bg-white flex items-center justify-center text-rose-300 shadow-sm overflow-hidden border border-rose-50"><img src="${stf.img||'https://images.unsplash.com/photo-1595959183082-7b570b7e08e2?w=400&q=80'}" class="w-full h-full object-cover"></div><div><p class="text-stone-800 text-lg font-display font-semibold">${stf.name}</p><p class="text-xs text-stone-500 mt-1">${stf.title}</p></div></button>`).join('')}</div>`; 
+        b = av.length === 0 ? `<p class="text-stone-400 text-center py-10">Uygun uzman bulunmuyor.</p>` : `<div class="grid sm:grid-cols-2 gap-4">${av.map(stf => `<button onclick="setBookingStaff(${stf.id})" class="text-left border rounded-3xl p-5 flex items-center gap-4 transition-all ${d.staff?.id === stf.id ? 'border-primary bg-rose-50 ring-1 ring-rose-200' : 'border-stone-100 hover:border-rose-200'}"><div class="w-14 h-14 rounded-full bg-white flex items-center justify-center text-rose-300 shadow-sm overflow-hidden border border-rose-50"><img src="${stf.img}" class="w-full h-full object-cover"></div><div><p class="text-stone-800 text-lg font-display font-semibold">${stf.name}</p><p class="text-xs text-stone-500 mt-1">${stf.title}</p></div></button>`).join('')}</div>`; 
       }
       else if (s === 2) { 
         canNext = d.time !== null;
@@ -652,7 +695,7 @@
           
           <div class="flex flex-wrap gap-4 mb-6 bg-white p-4 rounded-2xl border border-rose-50 shadow-sm">
             <select onchange="updateFilter('financeType', this.value)" class="border border-stone-200 rounded-xl px-4 py-2 text-sm bg-stone-50 focus:outline-none"><option value="all">Tüm İşlemler</option><option value="income">Gelirler</option><option value="expense">Giderler</option></select>
-            <select onchange="updateFilter('financeDate', this.value)" class="border border-stone-200 rounded-xl px-4 py-2 text-sm bg-stone-50 focus:outline-none"><option value="all" ${state.filters.financeDate==='all'?'selected':''}>Tüm Zamanlar</option><option value="1d" ${state.filters.financeDate==='1d'?'selected':''}>Son 1 Gün (Bugün)</option><option value="3d" ${state.filters.financeDate==='3d'?'selected':''}>Son 3 Gün</option><option value="1w" ${state.filters.financeDate==='1w'?'selected':''}>Son 1 Hafta</option><option value="1m" ${state.filters.financeDate==='1m'?'selected':''}>Son 1 Ay</option></select>
+            <select onchange="updateFilter('financeDate', this.value)" class="border border-stone-200 rounded-xl px-4 py-2 text-sm bg-stone-50 focus:outline-none"><option value="all" ${state.filters.financeDate==='all'?'selected':''}>Tüm Zamanlar</option><option value="1d" ${state.filters.financeDate==='1d'?'selected':''}>Son 1 Gün</option><option value="3d" ${state.filters.financeDate==='3d'?'selected':''}>Son 3 Gün</option><option value="1w" ${state.filters.financeDate==='1w'?'selected':''}>Son 1 Hafta</option><option value="1m" ${state.filters.financeDate==='1m'?'selected':''}>Son 1 Ay</option></select>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -804,21 +847,13 @@
     // --- MODALLAR ---
     function renderModals() {
       let m = '';
-      let apt = null;
-      let srv = null;
-
       if(state.modals.postpone) {
-        apt = APPOINTMENTS.find(a => a.id === state.activeId);
-        if(apt) {
-          m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-2">Zamanı Değiştir</h3><p class="text-sm text-stone-500 mb-6">${apt.customer} <br><span class="text-xs">${apt.service}</span></p><form onsubmit="savePostpone(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Yeni Tarih</label><input id="pDate" type="date" required value="${apt.date}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 focus:ring-1 focus:ring-primary focus:outline-none text-sm bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Yeni Saat</label><input id="pTime" type="time" required value="${apt.time}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 focus:ring-1 focus:ring-primary focus:outline-none text-sm bg-stone-50"></div><div class="flex gap-3 mt-8"><button type="button" onclick="state.modals.postpone=false; render()" class="flex-1 py-3.5 text-sm font-medium text-stone-500 bg-stone-100 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-blue-500 rounded-2xl shadow-md">Kaydet</button></div></form></div></div>`;
-        }
+        const apt = APPOINTMENTS.find(a => a.id === state.activeId);
+        m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-2">Zamanı Değiştir</h3><p class="text-sm text-stone-500 mb-6">${apt.customer} <br><span class="text-xs">${apt.service}</span></p><form onsubmit="savePostpone(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Yeni Tarih</label><input id="pDate" type="date" required value="${apt.date}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 focus:ring-1 focus:ring-primary focus:outline-none text-sm bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Yeni Saat</label><input id="pTime" type="time" required value="${apt.time}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 focus:ring-1 focus:ring-primary focus:outline-none text-sm bg-stone-50"></div><div class="flex gap-3 mt-8"><button type="button" onclick="state.modals.postpone=false; render()" class="flex-1 py-3.5 text-sm font-medium text-stone-500 bg-stone-100 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-blue-500 rounded-2xl shadow-md">Kaydet</button></div></form></div></div>`;
       }
       if(state.modals.payment) {
-        apt = APPOINTMENTS.find(a => a.id === state.activeId); 
-        if(apt) {
-          srv = SERVICES.find(s => s.name === apt.service);
-          m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><div class="w-14 h-14 rounded-full bg-green-50 text-green-500 flex items-center justify-center mb-4"><i data-lucide="banknote" class="w-6 h-6"></i></div><h3 class="text-2xl text-stone-800 font-display font-semibold mb-2">Ödeme Al & Tamamla</h3><p class="text-sm text-stone-500 mb-6">${apt.customer} - ${apt.time}</p><form onsubmit="savePayment(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Uygulanan İşlem(ler)</label><input id="payDesc" type="text" required value="${apt.service}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50 text-sm"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Tahsil Edilen Tutar (₺)</label><input id="payAmount" type="number" required value="${srv ? srv.priceMin : 0}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Ödeme Yöntemi</label><select id="payMethod" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"><option>Kredi Kartı</option><option>Nakit</option><option>Havale/EFT</option></select></div><div class="flex gap-3 mt-8"><button type="button" onclick="state.modals.payment=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-green-500 rounded-2xl shadow-md">İşlemi Tamamla</button></div></form></div></div>`;
-        }
+        const apt = APPOINTMENTS.find(a => a.id === state.activeId); const srv = SERVICES.find(s => s.name === apt.service);
+        m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><div class="w-14 h-14 rounded-full bg-green-50 text-green-500 flex items-center justify-center mb-4"><i data-lucide="banknote" class="w-6 h-6"></i></div><h3 class="text-2xl text-stone-800 font-display font-semibold mb-2">Ödeme Al & Tamamla</h3><p class="text-sm text-stone-500 mb-6">${apt.customer} - ${apt.time}</p><form onsubmit="savePayment(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Uygulanan İşlem(ler)</label><input id="payDesc" type="text" required value="${apt.service}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50 text-sm"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Tahsil Edilen Tutar (₺)</label><input id="payAmount" type="number" required value="${srv ? srv.priceMin : 0}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Ödeme Yöntemi</label><select id="payMethod" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50"><option>Kredi Kartı</option><option>Nakit</option><option>Havale/EFT</option></select></div><div class="flex gap-3 mt-8"><button type="button" onclick="state.modals.payment=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-green-500 rounded-2xl shadow-md">İşlemi Tamamla</button></div></form></div></div>`;
       }
       if(state.modals.addStock) {
         m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-6">Stok Ekle</h3><form onsubmit="saveStock(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Ürün Adı</label><input id="iName" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Miktar</label><input id="iStock" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Birim</label><input id="iUnit" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Kritik Uyarı</label><input id="iMin" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Birim Maliyet</label><input id="iCost" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div></div><div class="flex gap-3 mt-6"><button type="button" onclick="state.modals.addStock=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-primary rounded-2xl shadow-md">Kaydet</button></div></form></div></div>`;
@@ -829,6 +864,7 @@
       if(state.modals.addFinance) {
         m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-sm w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-6">Finansal İşlem Ekle</h3><form onsubmit="saveFinance(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">İşlem Türü</label><select id="fType" class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"><option value="income">Gelir</option><option value="expense">Gider</option></select></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Açıklama</label><input id="fDesc" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Tutar (₺)</label><input id="fAmount" type="number" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Yöntem</label><select id="fMethod" class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"><option>Nakit</option><option>Kredi Kartı</option><option>Havale</option></select></div></div><div class="flex gap-3 mt-6"><button type="button" onclick="state.modals.addFinance=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-primary rounded-2xl shadow-md">Kaydet</button></div></form></div></div>`;
       }
+      
       if(state.modals.addStaff) {
         const isEdit = state.editStaffId !== null;
         const stf = isEdit ? STAFF.find(s => s.id === state.editStaffId) : null;
@@ -839,6 +875,7 @@
           <div class="bg-white rounded-[2rem] p-8 max-w-2xl w-full">
             <h3 class="text-2xl text-stone-800 font-display font-semibold mb-6">${isEdit ? 'Uzmanı Düzenle' : 'Yeni Uzman Ekle'}</h3>
             <form onsubmit="saveStaff(event)" class="space-y-5">
+              
               <div class="flex flex-col sm:flex-row gap-6 items-center sm:items-start mb-4">
                 <div class="w-24 h-24 rounded-full overflow-hidden border-4 border-rose-50 shrink-0">
                   <img id="staffImgPreview" src="${currentImg}" class="w-full h-full object-cover">
@@ -848,14 +885,23 @@
                   <input type="file" accept=".jpg, .jpeg, .png" onchange="handleStaffImage(event)" class="w-full text-sm text-stone-500 file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-rose-50 file:text-primary hover:file:bg-rose-100 cursor-pointer">
                 </div>
               </div>
+
               <div class="grid grid-cols-2 gap-4">
-                <div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Ad Soyad</label><input id="newStaffName" required type="text" value="${stf ? stf.name : ''}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50 text-sm"></div>
-                <div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Unvan / Meslek</label><input id="newStaffTitle" required type="text" value="${stf ? stf.title : ''}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50 text-sm"></div>
+                <div>
+                  <label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Ad Soyad</label>
+                  <input id="newStaffName" required type="text" value="${stf ? stf.name : ''}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50 text-sm">
+                </div>
+                <div>
+                  <label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Unvan / Meslek</label>
+                  <input id="newStaffTitle" required type="text" value="${stf ? stf.title : ''}" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50 text-sm">
+                </div>
               </div>
+
               <div>
                 <label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Uzman Biyografisi (Bio)</label>
                 <textarea id="newStaffBio" required rows="3" class="w-full border border-stone-200 rounded-2xl px-5 py-3.5 bg-stone-50 text-sm resize-none" placeholder="Müşterilere gösterilecek açıklama...">${stf ? (stf.bio||'') : ''}</textarea>
               </div>
+
               <div>
                 <label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-3">Uzmanlık Alanları (Hizmet Seçimi)</label>
                 <div class="grid grid-cols-2 gap-3 p-5 bg-rose-50/50 rounded-2xl border border-rose-100 max-h-32 overflow-y-auto">
@@ -866,6 +912,7 @@
                   `).join('')}
                 </div>
               </div>
+
               <div class="flex gap-3 mt-6">
                 <button type="button" onclick="state.modals.addStaff=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button>
                 <button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-primary rounded-2xl shadow-md">Kaydet</button>
@@ -874,9 +921,11 @@
           </div>
         </div>`;
       }
+
       if(state.modals.addUser) {
         m += `<div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4"><div class="bg-white rounded-[2rem] p-8 max-w-lg w-full"><h3 class="text-2xl text-stone-800 font-display font-semibold mb-6">Personel Hesabı Oluştur</h3><form onsubmit="saveUser(event)" class="space-y-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Kullanıcı Adı</label><input id="newUName" required class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Giriş E-postası</label><input id="newUEmail" required type="email" class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-2">Şifre</label><input id="newUPass" required type="text" class="w-full border border-stone-200 rounded-2xl px-5 py-3 bg-stone-50"></div></div><div><label class="text-[10px] font-semibold text-stone-500 uppercase tracking-widest block mb-3">Erişim İzinleri (Sayfalar)</label><div class="grid grid-cols-2 gap-3 p-5 bg-rose-50/50 rounded-2xl border border-rose-100">${ADMIN_PAGES.map(t => `<label class="flex items-center gap-3 text-sm text-stone-700 cursor-pointer"><input type="checkbox" value="${t.id}" class="perm-checkbox w-4 h-4 accent-rose-500"> ${t.label}</label>`).join('')}</div></div><div class="flex gap-3 mt-6"><button type="button" onclick="state.modals.addUser=false; render()" class="flex-1 py-3.5 text-sm font-medium bg-stone-100 text-stone-500 rounded-2xl">İptal</button><button type="submit" class="flex-1 py-3.5 text-sm font-medium text-white bg-stone-800 rounded-2xl shadow-md">Oluştur</button></div></form></div></div>`;
       }
+      
       if(state.modals.clearHistory) {
         m += `
           <div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4">
@@ -907,6 +956,7 @@
           </div>
         `;
       }
+
       if(state.modals.density) {
         m += `
           <div class="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center px-4">
